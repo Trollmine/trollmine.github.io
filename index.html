@@ -1,15 +1,902 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Trollmine</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title>Trollmine</title>
+
+	<meta name="description" content="Trollmine — Roblox developer and creator.">
+	<meta name="theme-color" content="#7c5cff">
+
+	<style>
+		@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+		:root {
+			--background: #07070c;
+			--card: rgba(18, 18, 29, 0.72);
+			--card-border: rgba(255, 255, 255, 0.1);
+			--text: #ffffff;
+			--muted: #a7a7b4;
+			--primary: #836fff;
+			--secondary: #ba68ff;
+			--accent: #58d6ff;
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		html {
+			scroll-behavior: smooth;
+		}
+
+		body {
+			min-height: 100vh;
+			overflow-x: hidden;
+			background:
+				radial-gradient(circle at top, #181126 0%, var(--background) 48%),
+				var(--background);
+			color: var(--text);
+			font-family: "Inter", sans-serif;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 40px 20px;
+		}
+
+		.background-grid {
+			position: fixed;
+			inset: 0;
+			z-index: -5;
+			background-image:
+				linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+				linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+			background-size: 45px 45px;
+			mask-image: linear-gradient(to bottom, black, transparent 90%);
+		}
+
+		.noise {
+			position: fixed;
+			inset: 0;
+			z-index: -4;
+			opacity: 0.04;
+			pointer-events: none;
+			background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+		}
+
+		.blob {
+			position: fixed;
+			width: 420px;
+			height: 420px;
+			border-radius: 50%;
+			filter: blur(110px);
+			opacity: 0.28;
+			z-index: -3;
+			animation: floatBlob 12s ease-in-out infinite alternate;
+		}
+
+		.blob-one {
+			top: -140px;
+			left: -130px;
+			background: var(--primary);
+		}
+
+		.blob-two {
+			right: -150px;
+			bottom: -140px;
+			background: var(--secondary);
+			animation-delay: -4s;
+		}
+
+		.blob-three {
+			top: 40%;
+			left: 55%;
+			width: 280px;
+			height: 280px;
+			background: var(--accent);
+			opacity: 0.12;
+			animation-delay: -8s;
+		}
+
+		@keyframes floatBlob {
+			from {
+				transform: translate3d(-20px, -15px, 0) scale(1);
+			}
+
+			to {
+				transform: translate3d(45px, 35px, 0) scale(1.15);
+			}
+		}
+
+		#particles {
+			position: fixed;
+			inset: 0;
+			z-index: -2;
+			pointer-events: none;
+		}
+
+		.page {
+			width: 100%;
+			max-width: 560px;
+			animation: pageEnter 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+		}
+
+		@keyframes pageEnter {
+			from {
+				opacity: 0;
+				transform: translateY(35px) scale(0.97);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0) scale(1);
+			}
+		}
+
+		.card {
+			position: relative;
+			overflow: hidden;
+			padding: 34px;
+			border: 1px solid var(--card-border);
+			border-radius: 28px;
+			background: var(--card);
+			backdrop-filter: blur(24px);
+			-webkit-backdrop-filter: blur(24px);
+			box-shadow:
+				0 30px 80px rgba(0, 0, 0, 0.5),
+				inset 0 1px 0 rgba(255, 255, 255, 0.08);
+		}
+
+		.card::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			padding: 1px;
+			border-radius: inherit;
+			background: linear-gradient(
+				135deg,
+				rgba(131, 111, 255, 0.65),
+				transparent 35%,
+				transparent 65%,
+				rgba(88, 214, 255, 0.3)
+			);
+			-webkit-mask:
+				linear-gradient(#fff 0 0) content-box,
+				linear-gradient(#fff 0 0);
+			-webkit-mask-composite: xor;
+			mask-composite: exclude;
+			pointer-events: none;
+		}
+
+		.card-glow {
+			position: absolute;
+			top: -180px;
+			left: 50%;
+			width: 420px;
+			height: 300px;
+			transform: translateX(-50%);
+			background: radial-gradient(
+				circle,
+				rgba(131, 111, 255, 0.26),
+				transparent 70%
+			);
+			pointer-events: none;
+		}
+
+		.profile {
+			position: relative;
+			z-index: 1;
+			text-align: center;
+		}
+
+		.avatar-wrapper {
+			position: relative;
+			width: 122px;
+			height: 122px;
+			margin: 0 auto 22px;
+		}
+
+		.avatar-ring {
+			position: absolute;
+			inset: -5px;
+			border-radius: 50%;
+			background: conic-gradient(
+				from 0deg,
+				var(--primary),
+				var(--secondary),
+				var(--accent),
+				var(--primary)
+			);
+			animation: rotateRing 5s linear infinite;
+			filter: drop-shadow(0 0 12px rgba(131, 111, 255, 0.65));
+		}
+
+		.avatar-ring::after {
+			content: "";
+			position: absolute;
+			inset: 4px;
+			border-radius: 50%;
+			background: #0d0d16;
+		}
+
+		@keyframes rotateRing {
+			to {
+				transform: rotate(360deg);
+			}
+		}
+
+		.avatar {
+			position: absolute;
+			inset: 4px;
+			z-index: 2;
+			width: 114px;
+			height: 114px;
+			border: 4px solid #0d0d16;
+			border-radius: 50%;
+			object-fit: cover;
+			background: linear-gradient(135deg, #24243e, #12121d);
+		}
+
+		.status-dot {
+			position: absolute;
+			right: 7px;
+			bottom: 8px;
+			z-index: 3;
+			width: 23px;
+			height: 23px;
+			border: 5px solid #12121d;
+			border-radius: 50%;
+			background: #23d18b;
+			box-shadow: 0 0 14px rgba(35, 209, 139, 0.8);
+		}
+
+		.name-row {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 9px;
+		}
+
+		h1 {
+			font-size: clamp(2rem, 8vw, 2.8rem);
+			font-weight: 800;
+			letter-spacing: -1.8px;
+			background: linear-gradient(
+				90deg,
+				#ffffff 5%,
+				#c9bfff 45%,
+				#8ce8ff 100%
+			);
+			-webkit-background-clip: text;
+			background-clip: text;
+			color: transparent;
+		}
+
+		.verified {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 23px;
+			height: 23px;
+			border-radius: 50%;
+			background: linear-gradient(135deg, var(--primary), var(--accent));
+			color: white;
+			font-size: 13px;
+			font-weight: 800;
+			box-shadow: 0 0 15px rgba(131, 111, 255, 0.55);
+		}
+
+		.username {
+			margin-top: 5px;
+			color: var(--muted);
+			font-size: 0.9rem;
+		}
+
+		.typing-line {
+			height: 28px;
+			margin-top: 18px;
+			color: #e8e5ff;
+			font-size: 1rem;
+			font-weight: 600;
+		}
+
+		.cursor {
+			display: inline-block;
+			margin-left: 2px;
+			color: var(--accent);
+			animation: blink 0.8s steps(1) infinite;
+		}
+
+		@keyframes blink {
+			50% {
+				opacity: 0;
+			}
+		}
+
+		.bio {
+			max-width: 420px;
+			margin: 13px auto 0;
+			color: var(--muted);
+			font-size: 0.94rem;
+			line-height: 1.7;
+		}
+
+		.tags {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: center;
+			gap: 8px;
+			margin-top: 20px;
+		}
+
+		.tag {
+			padding: 7px 11px;
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			border-radius: 999px;
+			background: rgba(255, 255, 255, 0.045);
+			color: #cac7d8;
+			font-size: 0.76rem;
+			font-weight: 600;
+			transition:
+				transform 0.2s ease,
+				border-color 0.2s ease,
+				background 0.2s ease;
+		}
+
+		.tag:hover {
+			transform: translateY(-2px);
+			border-color: rgba(131, 111, 255, 0.45);
+			background: rgba(131, 111, 255, 0.1);
+		}
+
+		.divider {
+			height: 1px;
+			margin: 27px 0;
+			background: linear-gradient(
+				90deg,
+				transparent,
+				rgba(255, 255, 255, 0.12),
+				transparent
+			);
+		}
+
+		.links {
+			display: flex;
+			flex-direction: column;
+			gap: 13px;
+		}
+
+		.link-card {
+			position: relative;
+			display: flex;
+			align-items: center;
+			width: 100%;
+			min-height: 68px;
+			padding: 13px 17px;
+			overflow: hidden;
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			border-radius: 18px;
+			background: rgba(255, 255, 255, 0.045);
+			color: white;
+			text-decoration: none;
+			transition:
+				transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+				border-color 0.25s ease,
+				background 0.25s ease,
+				box-shadow 0.25s ease;
+		}
+
+		.link-card::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			transform: translateX(-110%);
+			background: linear-gradient(
+				90deg,
+				transparent,
+				rgba(255, 255, 255, 0.08),
+				transparent
+			);
+			transition: transform 0.65s ease;
+		}
+
+		.link-card:hover {
+			transform: translateY(-4px) scale(1.015);
+			border-color: rgba(131, 111, 255, 0.42);
+			background: rgba(131, 111, 255, 0.09);
+			box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+		}
+
+		.link-card:hover::before {
+			transform: translateX(110%);
+		}
+
+		.link-icon {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-shrink: 0;
+			width: 43px;
+			height: 43px;
+			margin-right: 14px;
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			border-radius: 13px;
+			background: rgba(255, 255, 255, 0.07);
+			font-size: 1.25rem;
+			box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+		}
+
+		.link-info {
+			flex: 1;
+			text-align: left;
+		}
+
+		.link-title {
+			display: block;
+			font-size: 0.95rem;
+			font-weight: 700;
+		}
+
+		.link-description {
+			display: block;
+			margin-top: 3px;
+			color: var(--muted);
+			font-size: 0.76rem;
+		}
+
+		.link-arrow {
+			margin-left: 12px;
+			color: var(--muted);
+			font-size: 1.25rem;
+			transition:
+				transform 0.25s ease,
+				color 0.25s ease;
+		}
+
+		.link-card:hover .link-arrow {
+			transform: translateX(4px);
+			color: white;
+		}
+
+		.discord:hover {
+			border-color: rgba(88, 101, 242, 0.6);
+			background: rgba(88, 101, 242, 0.12);
+		}
+
+		.github:hover {
+			border-color: rgba(255, 255, 255, 0.3);
+			background: rgba(255, 255, 255, 0.08);
+		}
+
+		.roblox:hover {
+			border-color: rgba(255, 90, 90, 0.5);
+			background: rgba(255, 74, 74, 0.09);
+		}
+
+		.youtube:hover {
+			border-color: rgba(255, 0, 0, 0.5);
+			background: rgba(255, 0, 0, 0.09);
+		}
+
+		.footer {
+			margin-top: 25px;
+			color: #676774;
+			font-size: 0.75rem;
+			text-align: center;
+		}
+
+		.footer span {
+			color: #9d8dff;
+		}
+
+		.music-button {
+			position: fixed;
+			right: 22px;
+			bottom: 22px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 48px;
+			height: 48px;
+			border: 1px solid rgba(255, 255, 255, 0.12);
+			border-radius: 15px;
+			background: rgba(18, 18, 29, 0.75);
+			backdrop-filter: blur(18px);
+			color: white;
+			font-size: 1.1rem;
+			cursor: pointer;
+			box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+			transition:
+				transform 0.25s ease,
+				background 0.25s ease;
+		}
+
+		.music-button:hover {
+			transform: translateY(-3px) rotate(4deg);
+			background: rgba(131, 111, 255, 0.25);
+		}
+
+		.music-button.playing {
+			animation: musicPulse 1.4s ease-in-out infinite;
+		}
+
+		@keyframes musicPulse {
+			50% {
+				box-shadow:
+					0 0 0 8px rgba(131, 111, 255, 0.08),
+					0 0 28px rgba(131, 111, 255, 0.42);
+			}
+		}
+
+		@media (max-width: 600px) {
+			body {
+				align-items: flex-start;
+				padding: 20px 14px 90px;
+			}
+
+			.card {
+				padding: 28px 18px;
+				border-radius: 24px;
+			}
+
+			.avatar-wrapper {
+				width: 108px;
+				height: 108px;
+			}
+
+			.avatar {
+				width: 100px;
+				height: 100px;
+			}
+
+			.link-card {
+				min-height: 64px;
+				padding: 11px 13px;
+			}
+
+			.link-icon {
+				width: 40px;
+				height: 40px;
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			* {
+				animation-duration: 0.01ms !important;
+				animation-iteration-count: 1 !important;
+				scroll-behavior: auto !important;
+			}
+		}
+	</style>
 </head>
-<body style="background:#111;color:white;font-family:sans-serif;text-align:center;margin-top:100px;">
-    <h1>Trollmine</h1>
 
-    <p>Roblox Developer</p>
+<body>
+	<div class="background-grid"></div>
+	<div class="noise"></div>
 
-    <a href="https://discord.gg/h6HXbB6Mvs">Discord server</a><br>
-    <a href="https://github.com/trollmine">GitHub</a><br>
-    <a href="https://www.roblox.com/users/3522553826/profile">Roblox Profile</a>
+	<div class="blob blob-one"></div>
+	<div class="blob blob-two"></div>
+	<div class="blob blob-three"></div>
+
+	<canvas id="particles"></canvas>
+
+	<main class="page">
+		<section class="card" id="profileCard">
+			<div class="card-glow"></div>
+
+			<div class="profile">
+				<div class="avatar-wrapper">
+					<div class="avatar-ring"></div>
+
+					<!-- Replace avatar.png with your own picture -->
+					<img
+						class="avatar"
+						src="avatar.png"
+						alt="Trollmine profile picture"
+						onerror="this.src='https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Trollmine'"
+					>
+
+					<div class="status-dot" title="Online"></div>
+				</div>
+
+				<div class="name-row">
+					<h1>Trollmine</h1>
+					<span class="verified" title="Verified">✓</span>
+				</div>
+
+				<p class="username">@trollmine</p>
+
+				<div class="typing-line">
+					<span id="typingText"></span>
+					<span class="cursor">|</span>
+				</div>
+
+				<p class="bio">
+					Building games, interfaces and cool digital experiences.
+					Mostly working with Roblox Studio and turning random ideas
+					into real projects.
+				</p>
+
+				<div class="tags">
+					<span class="tag">Roblox Developer</span>
+					<span class="tag">Lua</span>
+					<span class="tag">UI Designer</span>
+					<span class="tag">Game Creator</span>
+				</div>
+			</div>
+
+			<div class="divider"></div>
+
+			<div class="links">
+				<!-- Replace each href with your real links -->
+
+				<a
+					class="link-card discord"
+					href="https://discord.gg/YOURSERVER"
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					<div class="link-icon">💬</div>
+
+					<div class="link-info">
+						<span class="link-title">Discord</span>
+						<span class="link-description">Join my community</span>
+					</div>
+
+					<span class="link-arrow">›</span>
+				</a>
+
+				<a
+					class="link-card github"
+					href="https://github.com/YOURUSERNAME"
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					<div class="link-icon">⌨</div>
+
+					<div class="link-info">
+						<span class="link-title">GitHub</span>
+						<span class="link-description">Check out my projects</span>
+					</div>
+
+					<span class="link-arrow">›</span>
+				</a>
+
+				<a
+					class="link-card roblox"
+					href="https://www.roblox.com/users/YOURID/profile"
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					<div class="link-icon">◈</div>
+
+					<div class="link-info">
+						<span class="link-title">Roblox</span>
+						<span class="link-description">View my Roblox profile</span>
+					</div>
+
+					<span class="link-arrow">›</span>
+				</a>
+
+				<a
+					class="link-card youtube"
+					href="https://youtube.com/@YOURCHANNEL"
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					<div class="link-icon">▶</div>
+
+					<div class="link-info">
+						<span class="link-title">YouTube</span>
+						<span class="link-description">Watch my content</span>
+					</div>
+
+					<span class="link-arrow">›</span>
+				</a>
+			</div>
+
+			<p class="footer">
+				Made with <span>◆</span> by Trollmine
+			</p>
+		</section>
+	</main>
+
+	<button
+		class="music-button"
+		id="musicButton"
+		type="button"
+		title="Play background music"
+	>
+		♫
+	</button>
+
+	<!-- Put a file named music.mp3 inside your repository -->
+	<audio id="backgroundMusic" loop>
+		<source src="music.mp3" type="audio/mpeg">
+	</audio>
+
+	<script>
+		// Typing animation
+
+		const typingText = document.getElementById("typingText");
+
+		const phrases = [
+			"Roblox Developer",
+			"Game Creator",
+			"UI Designer",
+			"Professional bug creator",
+			"Turning ideas into games"
+		];
+
+		let phraseIndex = 0;
+		let characterIndex = 0;
+		let isDeleting = false;
+
+		function updateTyping() {
+			const currentPhrase = phrases[phraseIndex];
+
+			if (isDeleting) {
+				characterIndex--;
+			} else {
+				characterIndex++;
+			}
+
+			typingText.textContent = currentPhrase.substring(0, characterIndex);
+
+			let delay = isDeleting ? 45 : 80;
+
+			if (!isDeleting && characterIndex === currentPhrase.length) {
+				isDeleting = true;
+				delay = 1400;
+			} else if (isDeleting && characterIndex === 0) {
+				isDeleting = false;
+				phraseIndex = (phraseIndex + 1) % phrases.length;
+				delay = 350;
+			}
+
+			setTimeout(updateTyping, delay);
+		}
+
+		updateTyping();
+
+
+		// Music button
+
+		const musicButton = document.getElementById("musicButton");
+		const backgroundMusic = document.getElementById("backgroundMusic");
+
+		let musicPlaying = false;
+
+		musicButton.addEventListener("click", async () => {
+			try {
+				if (musicPlaying) {
+					backgroundMusic.pause();
+					musicButton.textContent = "♫";
+					musicButton.classList.remove("playing");
+					musicButton.title = "Play background music";
+				} else {
+					backgroundMusic.volume = 0.35;
+					await backgroundMusic.play();
+
+					musicButton.textContent = "❚❚";
+					musicButton.classList.add("playing");
+					musicButton.title = "Pause background music";
+				}
+
+				musicPlaying = !musicPlaying;
+			} catch (error) {
+				console.warn("Music could not be played:", error);
+			}
+		});
+
+
+		// Mouse tilt effect
+
+		const profileCard = document.getElementById("profileCard");
+
+		profileCard.addEventListener("mousemove", event => {
+			const bounds = profileCard.getBoundingClientRect();
+
+			const mouseX = event.clientX - bounds.left;
+			const mouseY = event.clientY - bounds.top;
+
+			const centerX = bounds.width / 2;
+			const centerY = bounds.height / 2;
+
+			const rotateY = ((mouseX - centerX) / centerX) * 2.2;
+			const rotateX = ((centerY - mouseY) / centerY) * 2.2;
+
+			profileCard.style.transform =
+				`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+		});
+
+		profileCard.addEventListener("mouseleave", () => {
+			profileCard.style.transform =
+				"perspective(1000px) rotateX(0deg) rotateY(0deg)";
+		});
+
+		profileCard.style.transition = "transform 0.2s ease-out";
+
+
+		// Particle background
+
+		const canvas = document.getElementById("particles");
+		const context = canvas.getContext("2d");
+
+		let particles = [];
+
+		function resizeCanvas() {
+			canvas.width = window.innerWidth;
+			canvas.height = window.innerHeight;
+
+			createParticles();
+		}
+
+		function createParticles() {
+			const particleCount = Math.min(
+				90,
+				Math.floor((canvas.width * canvas.height) / 15000)
+			);
+
+			particles = [];
+
+			for (let index = 0; index < particleCount; index++) {
+				particles.push({
+					x: Math.random() * canvas.width,
+					y: Math.random() * canvas.height,
+					radius: Math.random() * 1.6 + 0.4,
+					speedX: (Math.random() - 0.5) * 0.25,
+					speedY: Math.random() * 0.3 + 0.05,
+					opacity: Math.random() * 0.45 + 0.1
+				});
+			}
+		}
+
+		function animateParticles() {
+			context.clearRect(0, 0, canvas.width, canvas.height);
+
+			for (const particle of particles) {
+				particle.x += particle.speedX;
+				particle.y += particle.speedY;
+
+				if (particle.y > canvas.height + 10) {
+					particle.y = -10;
+					particle.x = Math.random() * canvas.width;
+				}
+
+				if (particle.x > canvas.width + 10) {
+					particle.x = -10;
+				}
+
+				if (particle.x < -10) {
+					particle.x = canvas.width + 10;
+				}
+
+				context.beginPath();
+				context.arc(
+					particle.x,
+					particle.y,
+					particle.radius,
+					0,
+					Math.PI * 2
+				);
+
+				context.fillStyle =
+					`rgba(190, 180, 255, ${particle.opacity})`;
+
+				context.fill();
+			}
+
+			requestAnimationFrame(animateParticles);
+		}
+
+		window.addEventListener("resize", resizeCanvas);
+
+		resizeCanvas();
+		animateParticles();
+	</script>
 </body>
 </html>
