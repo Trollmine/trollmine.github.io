@@ -505,6 +505,7 @@
 			border-radius: 15px;
 			background: rgba(18, 18, 29, 0.75);
 			backdrop-filter: blur(18px);
+			-webkit-backdrop-filter: blur(18px);
 			color: white;
 			font-size: 1.1rem;
 			cursor: pointer;
@@ -591,7 +592,6 @@
 				<div class="avatar-wrapper">
 					<div class="avatar-ring"></div>
 
-					<!-- Replace avatar.png with your own picture -->
 					<img
 						class="avatar"
 						src="avatar.png"
@@ -631,8 +631,6 @@
 			<div class="divider"></div>
 
 			<div class="links">
-				<!-- Replace each href with your real links -->
-
 				<a
 					class="link-card discord"
 					href="https://discord.gg/h6HXbB6Mvs"
@@ -708,14 +706,15 @@
 		class="music-button"
 		id="musicButton"
 		type="button"
-		title="Play background music"
+		title="Pause background music"
+		aria-label="Toggle background music"
 	>
-		♫
+		❚❚
 	</button>
 
-	<!-- Put a file named music.mp3 inside your repository -->
-	<audio id="backgroundMusic" loop>
-		<source src="music.mp3" type="audio/mpeg">
+	<audio id="backgroundMusic" preload="auto" loop>
+		<source src="./music.mp3" type="audio/mpeg">
+		Your browser does not support audio playback.
 	</audio>
 
 	<script>
@@ -763,34 +762,156 @@
 		updateTyping();
 
 
-		// Music button
+		// Music system
 
 		const musicButton = document.getElementById("musicButton");
 		const backgroundMusic = document.getElementById("backgroundMusic");
 
-		let musicPlaying = false;
+		const MUSIC_PREFERENCE_KEY = "trollmineMusicPreference";
+		const savedMusicPreference = localStorage.getItem(MUSIC_PREFERENCE_KEY);
 
-		musicButton.addEventListener("click", async () => {
+		/*
+			If no preference has ever been saved, music defaults to enabled.
+			If the visitor previously disabled it, it stays disabled.
+		*/
+		let musicEnabled = savedMusicPreference !== "off";
+
+		backgroundMusic.volume = 0.35;
+
+
+		function updateMusicButton() {
+			if (musicEnabled && !backgroundMusic.paused) {
+				musicButton.textContent = "❚❚";
+				musicButton.classList.add("playing");
+				musicButton.title = "Pause background music";
+				musicButton.setAttribute("aria-label", "Pause background music");
+			} else {
+				musicButton.textContent = "♫";
+				musicButton.classList.remove("playing");
+				musicButton.title = "Play background music";
+				musicButton.setAttribute("aria-label", "Play background music");
+			}
+		}
+
+
+		async function playMusic() {
+			if (!musicEnabled) {
+				updateMusicButton();
+				return;
+			}
+
 			try {
-				if (musicPlaying) {
-					backgroundMusic.pause();
-					musicButton.textContent = "♫";
-					musicButton.classList.remove("playing");
-					musicButton.title = "Play background music";
-				} else {
-					backgroundMusic.volume = 0.35;
-					await backgroundMusic.play();
-
-					musicButton.textContent = "❚❚";
-					musicButton.classList.add("playing");
-					musicButton.title = "Pause background music";
-				}
-
-				musicPlaying = !musicPlaying;
+				await backgroundMusic.play();
+				updateMusicButton();
 			} catch (error) {
-				console.warn("Music could not be played:", error);
+				/*
+					The browser probably blocked autoplay because the visitor
+					has not interacted with the page yet.
+
+					The first click, touch or key press will try again.
+				*/
+				console.log("Autoplay blocked until visitor interaction.");
+				updateMusicButton();
+			}
+		}
+
+
+		function pauseMusic() {
+			backgroundMusic.pause();
+			updateMusicButton();
+		}
+
+
+		async function toggleMusic(event) {
+			/*
+				Stops the document click listener from also running when
+				the visitor clicks the music button.
+			*/
+			event.stopPropagation();
+
+			if (musicEnabled && !backgroundMusic.paused) {
+				musicEnabled = false;
+
+				localStorage.setItem(MUSIC_PREFERENCE_KEY, "off");
+
+				pauseMusic();
+			} else {
+				musicEnabled = true;
+
+				localStorage.setItem(MUSIC_PREFERENCE_KEY, "on");
+
+				await playMusic();
+			}
+		}
+
+
+		async function startMusicAfterInteraction() {
+			/*
+				Only starts after interaction when the visitor has not
+				disabled music.
+			*/
+			if (musicEnabled && backgroundMusic.paused) {
+				await playMusic();
+			}
+		}
+
+
+		musicButton.addEventListener("click", toggleMusic);
+
+
+		/*
+			Try autoplaying immediately.
+
+			This may work for returning visitors, but browsers can still
+			block it until they interact with the website.
+		*/
+		window.addEventListener("load", () => {
+			if (musicEnabled) {
+				playMusic();
+			} else {
+				pauseMusic();
 			}
 		});
+
+
+		/*
+			If autoplay was blocked, the first click, touch or key press
+			anywhere on the page starts the music.
+
+			These listeners remove themselves automatically after firing once.
+		*/
+		document.addEventListener(
+			"click",
+			startMusicAfterInteraction,
+			{ once: true }
+		);
+
+		document.addEventListener(
+			"touchstart",
+			startMusicAfterInteraction,
+			{ once: true }
+		);
+
+		document.addEventListener(
+			"keydown",
+			startMusicAfterInteraction,
+			{ once: true }
+		);
+
+
+		backgroundMusic.addEventListener("play", updateMusicButton);
+		backgroundMusic.addEventListener("pause", updateMusicButton);
+
+		backgroundMusic.addEventListener("error", () => {
+			console.error("The music file could not be loaded.");
+
+			musicButton.textContent = "⚠";
+			musicButton.classList.remove("playing");
+			musicButton.title = "The music file could not be loaded";
+		});
+
+
+		updateMusicButton();
 
 
 		// Mouse tilt effect
@@ -876,6 +997,7 @@
 				}
 
 				context.beginPath();
+
 				context.arc(
 					particle.x,
 					particle.y,
