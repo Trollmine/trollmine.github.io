@@ -647,6 +647,47 @@
 			background: #292929;
 		}
 
+		.generate-background-button {
+			background: linear-gradient(135deg, #836fff, #6451d8);
+			border-color: transparent;
+			color: #ffffff;
+		}
+
+		.generate-background-button:hover {
+			background: linear-gradient(135deg, #927fff, #715ee8);
+		}
+
+		.generate-background-button:disabled {
+			opacity: 0.55;
+			cursor: wait;
+			transform: none;
+		}
+
+		.gallery-toast {
+			position: fixed;
+			left: 50%;
+			bottom: 24px;
+			z-index: 210;
+			max-width: calc(100vw - 32px);
+			padding: 12px 16px;
+			transform: translate(-50%, 18px);
+			border-radius: 12px;
+			background: rgba(17, 17, 17, 0.92);
+			color: #ffffff;
+			font-size: 0.84rem;
+			font-weight: 700;
+			opacity: 0;
+			pointer-events: none;
+			transition:
+				opacity 0.2s ease,
+				transform 0.2s ease;
+		}
+
+		.gallery-toast.visible {
+			opacity: 1;
+			transform: translate(-50%, 0);
+		}
+
 		#folderInput {
 			display: none;
 		}
@@ -703,11 +744,6 @@
 			height: 100%;
 			object-fit: cover;
 			pointer-events: none;
-			transition: transform 0.2s ease;
-		}
-
-		.gallery-item:hover img {
-			transform: scale(1.025);
 		}
 
 		.gallery-empty {
@@ -956,6 +992,14 @@
 			<div class="gallery-info" id="zoomDisplay">100%</div>
 			<button class="gallery-control" id="zoomInButton" type="button" title="Zoom in">+</button>
 			<button class="gallery-control" id="resetGalleryButton" type="button">Reset</button>
+			<button
+				class="gallery-control generate-background-button"
+				id="generateBackgroundButton"
+				type="button"
+				title="Create a 2560 × 1440 mosaic wallpaper"
+			>
+				Generate Background
+			</button>
 		</div>
 
 		<div class="gallery-viewport" id="galleryViewport">
@@ -972,6 +1016,8 @@
 				</p>
 			</div>
 		</div>
+
+		<div class="gallery-toast" id="galleryToast" role="status" aria-live="polite"></div>
 	</section>
 
 	<button
@@ -1154,6 +1200,9 @@
 		const zoomInButton = document.getElementById("zoomInButton");
 		const zoomOutButton = document.getElementById("zoomOutButton");
 		const resetGalleryButton = document.getElementById("resetGalleryButton");
+		const generateBackgroundButton =
+			document.getElementById("generateBackgroundButton");
+		const galleryToast = document.getElementById("galleryToast");
 		const zoomDisplay = document.getElementById("zoomDisplay");
 
 		let galleryImages = [];
@@ -1444,6 +1493,231 @@
 		});
 
 		resetGalleryButton.addEventListener("click", resetGalleryView);
+
+		let galleryToastTimer;
+
+		function showGalleryToast(message) {
+			clearTimeout(galleryToastTimer);
+			galleryToast.textContent = message;
+			galleryToast.classList.add("visible");
+
+			galleryToastTimer = setTimeout(() => {
+				galleryToast.classList.remove("visible");
+			}, 2600);
+		}
+
+		function shuffleArray(items) {
+			const shuffled = [...items];
+
+			for (let index = shuffled.length - 1; index > 0; index--) {
+				const randomIndex = Math.floor(Math.random() * (index + 1));
+
+				[shuffled[index], shuffled[randomIndex]] =
+					[shuffled[randomIndex], shuffled[index]];
+			}
+
+			return shuffled;
+		}
+
+		function drawImageCover(context, image, x, y, width, height) {
+			const sourceRatio = image.naturalWidth / image.naturalHeight;
+			const targetRatio = width / height;
+
+			let sourceX = 0;
+			let sourceY = 0;
+			let sourceWidth = image.naturalWidth;
+			let sourceHeight = image.naturalHeight;
+
+			if (sourceRatio > targetRatio) {
+				sourceWidth = image.naturalHeight * targetRatio;
+				sourceX = (image.naturalWidth - sourceWidth) / 2;
+			} else {
+				sourceHeight = image.naturalWidth / targetRatio;
+				sourceY = (image.naturalHeight - sourceHeight) / 2;
+			}
+
+			context.drawImage(
+				image,
+				sourceX,
+				sourceY,
+				sourceWidth,
+				sourceHeight,
+				x,
+				y,
+				width,
+				height
+			);
+		}
+
+		function loadCanvasImage(source) {
+			return new Promise((resolve, reject) => {
+				const image = new Image();
+
+				image.onload = () => resolve(image);
+				image.onerror = reject;
+				image.src = source;
+			});
+		}
+
+		function createWallpaperLayout(imageCount) {
+			/*
+				Randomized templates. Every template fills a 2560 × 1440 canvas.
+				Each rectangle is stored as fractions of the full canvas.
+			*/
+			const templates = [
+				[
+					[0, 0, 0.58, 0.56],
+					[0.58, 0, 0.42, 0.56],
+					[0, 0.56, 0.32, 0.44],
+					[0.32, 0.56, 0.36, 0.44],
+					[0.68, 0.56, 0.32, 0.44]
+				],
+				[
+					[0, 0, 1, 0.42],
+					[0, 0.42, 0.46, 0.58],
+					[0.46, 0.42, 0.27, 0.58],
+					[0.73, 0.42, 0.27, 0.58]
+				],
+				[
+					[0, 0, 0.34, 1],
+					[0.34, 0, 0.66, 0.48],
+					[0.34, 0.48, 0.33, 0.52],
+					[0.67, 0.48, 0.33, 0.52]
+				],
+				[
+					[0, 0, 0.5, 0.5],
+					[0.5, 0, 0.5, 0.5],
+					[0, 0.5, 0.25, 0.5],
+					[0.25, 0.5, 0.5, 0.5],
+					[0.75, 0.5, 0.25, 0.5]
+				],
+				[
+					[0, 0, 0.64, 0.64],
+					[0.64, 0, 0.36, 0.32],
+					[0.64, 0.32, 0.36, 0.32],
+					[0, 0.64, 0.32, 0.36],
+					[0.32, 0.64, 0.34, 0.36],
+					[0.66, 0.64, 0.34, 0.36]
+				]
+			];
+
+			const suitableTemplates = templates.filter(
+				template => template.length <= imageCount
+			);
+
+			if (suitableTemplates.length > 0) {
+				return suitableTemplates[
+					Math.floor(Math.random() * suitableTemplates.length)
+				];
+			}
+
+			/*
+				Fallback for folders containing only one or two pictures.
+			*/
+			if (imageCount === 1) {
+				return [[0, 0, 1, 1]];
+			}
+
+			return [
+				[0, 0, 0.5, 1],
+				[0.5, 0, 0.5, 1]
+			];
+		}
+
+		async function generateMosaicBackground() {
+			if (galleryImages.length === 0) {
+				showGalleryToast("Choose a folder with images first.");
+				return;
+			}
+
+			generateBackgroundButton.disabled = true;
+			generateBackgroundButton.textContent = "Generating…";
+
+			try {
+				const canvas = document.createElement("canvas");
+				canvas.width = 2560;
+				canvas.height = 1440;
+
+				const context = canvas.getContext("2d", {
+					alpha: false
+				});
+
+				context.fillStyle = "#ffffff";
+				context.fillRect(0, 0, canvas.width, canvas.height);
+
+				const randomizedPhotos = shuffleArray(galleryImages);
+				const layout = createWallpaperLayout(randomizedPhotos.length);
+				const chosenPhotos = randomizedPhotos.slice(0, layout.length);
+				const loadedImages = await Promise.all(
+					chosenPhotos.map(photo => loadCanvasImage(photo.src))
+				);
+
+				const gap = 12;
+
+				layout.forEach((rectangle, index) => {
+					const [fractionX, fractionY, fractionWidth, fractionHeight] =
+						rectangle;
+
+					const x = Math.round(fractionX * canvas.width);
+					const y = Math.round(fractionY * canvas.height);
+					const width = Math.round(fractionWidth * canvas.width);
+					const height = Math.round(fractionHeight * canvas.height);
+
+					const insetLeft = x === 0 ? gap : gap / 2;
+					const insetTop = y === 0 ? gap : gap / 2;
+					const insetRight =
+						x + width >= canvas.width ? gap : gap / 2;
+					const insetBottom =
+						y + height >= canvas.height ? gap : gap / 2;
+
+					drawImageCover(
+						context,
+						loadedImages[index],
+						x + insetLeft,
+						y + insetTop,
+						width - insetLeft - insetRight,
+						height - insetTop - insetBottom
+					);
+				});
+
+				const blob = await new Promise((resolve, reject) => {
+					canvas.toBlob(
+						result => {
+							if (result) {
+								resolve(result);
+							} else {
+								reject(new Error("Could not create the wallpaper."));
+							}
+						},
+						"image/png"
+					);
+				});
+
+				const downloadUrl = URL.createObjectURL(blob);
+				const link = document.createElement("a");
+
+				link.href = downloadUrl;
+				link.download = `trollmine-mosaic-${Date.now()}.png`;
+				document.body.appendChild(link);
+				link.click();
+				link.remove();
+
+				setTimeout(() => URL.revokeObjectURL(downloadUrl), 1500);
+
+				showGalleryToast("2560 × 1440 mosaic downloaded.");
+			} catch (error) {
+				console.error(error);
+				showGalleryToast("The mosaic could not be generated.");
+			} finally {
+				generateBackgroundButton.disabled = false;
+				generateBackgroundButton.textContent = "Generate Background";
+			}
+		}
+
+		generateBackgroundButton.addEventListener(
+			"click",
+			generateMosaicBackground
+		);
 
 		galleryViewport.addEventListener("pointerdown", event => {
 			if (event.button !== 0) {
