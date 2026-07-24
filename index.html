@@ -1693,115 +1693,237 @@
 		let generatedWallpaperBlob = null;
 		let generatedWallpaperUrl = null;
 
-		function buildJustifiedWallpaperRows(photos, canvasWidth, canvasHeight) {
-			/*
-				Create enough randomized images to fill the whole canvas.
+		function makePhotoPool(photos, desiredCount) {
+			const result = [];
+			let shuffled = [];
 
-				Every row is justified to the full width. Images keep their
-				original aspect ratio, so nothing is cropped or stretched.
-				The final row is accepted only when the remaining unfilled
-				width is below this limit.
-			*/
-			const gap = 10;
-			const horizontalPadding = 10;
-			const verticalPadding = 10;
-			const usableWidth = canvasWidth - horizontalPadding * 2;
-			const usableHeight = canvasHeight - verticalPadding * 2;
-			const targetRowHeight = 250;
-			const remainingWidthLimit = 90;
-
-			const pool = shuffleArray(photos);
-			let poolIndex = 0;
-			const rows = [];
-			let estimatedHeight = 0;
-
-			function nextPhoto() {
-				if (poolIndex >= pool.length) {
-					const reshuffled = shuffleArray(photos);
-					pool.splice(0, pool.length, ...reshuffled);
-					poolIndex = 0;
+			while (result.length < desiredCount) {
+				if (shuffled.length === 0) {
+					shuffled = shuffleArray(photos);
 				}
 
-				return pool[poolIndex++];
+				result.push(shuffled.pop());
 			}
 
-			while (estimatedHeight < usableHeight) {
-				const row = [];
-				let ratioTotal = 0;
+			return result;
+		}
 
-				while (true) {
-					const photo = nextPhoto();
-					row.push(photo);
-					ratioTotal += photo.ratio;
+		function createRowPartitions(itemCount, rowCount, minSize, maxSize) {
+			const results = [];
 
-					const estimatedRowWidth =
-						ratioTotal * targetRowHeight +
-						gap * (row.length - 1);
-
-					const remainingWidth = usableWidth - estimatedRowWidth;
-
-					if (
-						estimatedRowWidth >= usableWidth ||
-						Math.abs(remainingWidth) <= remainingWidthLimit
-					) {
-						break;
+			function walk(remainingItems, remainingRows, current) {
+				if (remainingRows === 0) {
+					if (remainingItems === 0) {
+						results.push([...current]);
 					}
 
-					/*
-						A safety cap prevents a row from becoming absurdly dense
-						when a folder contains lots of very narrow portraits.
-					*/
-					if (row.length >= 12) {
-						break;
-					}
+					return;
 				}
+
+				const smallestPossible = remainingRows * minSize;
+				const largestPossible = remainingRows * maxSize;
+
+				if (
+					remainingItems < smallestPossible ||
+					remainingItems > largestPossible
+				) {
+					return;
+				}
+
+				for (let size = minSize; size <= maxSize; size++) {
+					current.push(size);
+					walk(
+						remainingItems - size,
+						remainingRows - 1,
+						current
+					);
+					current.pop();
+				}
+			}
+
+			walk(itemCount, rowCount, []);
+			return results;
+		}
+
+		function scoreJustifiedCandidate(
+			photos,
+			rowSizes,
+			usableWidth,
+			usableHeight,
+			gap
+		) {
+			const rows = [];
+			let photoIndex = 0;
+			let totalHeight = gap * Math.max(0, rowSizes.length - 1);
+			let unevenness = 0;
+			let previousHeight = null;
+
+			for (const rowSize of rowSizes) {
+				const rowPhotos = photos.slice(
+					photoIndex,
+					photoIndex + rowSize
+				);
+
+				photoIndex += rowSize;
+
+				const ratioTotal = rowPhotos.reduce(
+					(total, photo) => total + photo.ratio,
+					0
+				);
 
 				const rowHeight =
-					(usableWidth - gap * (row.length - 1)) / ratioTotal;
-
-				rows.push({
-					photos: row,
-					ratioTotal,
-					height: rowHeight
-				});
-
-				estimatedHeight += rowHeight;
-
-				if (rows.length > 1) {
-					estimatedHeight += gap;
-				}
+					(usableWidth - gap * (rowSize - 1)) /
+					ratioTotal;
 
 				/*
-					Safety cap for extremely unusual folders.
+					Reject rows that would make the pictures feel like tiny
+					thumbnails or giant banners.
 				*/
-				if (rows.length >= 20) {
-					break;
+				if (rowHeight < 220 || rowHeight > 420) {
+					return null;
 				}
+
+				if (previousHeight !== null) {
+					unevenness += Math.abs(rowHeight - previousHeight);
+				}
+
+				previousHeight = rowHeight;
+				totalHeight += rowHeight;
+
+				rows.push({
+					photos: rowPhotos,
+					height: rowHeight
+				});
 			}
 
-			/*
-				Scale all row heights together so the complete mosaic fills the
-				full 2560 × 1440 canvas exactly.
-			*/
-			const totalGapHeight = gap * Math.max(0, rows.length - 1);
-			const rawRowsHeight = rows.reduce(
-				(total, row) => total + row.height,
-				0
+			const heightDifference = Math.abs(
+				usableHeight - totalHeight
 			);
 
-			const heightScale =
-				(usableHeight - totalGapHeight) / rawRowsHeight;
-
-			for (const row of rows) {
-				row.height *= heightScale;
-			}
+			/*
+				Height accuracy matters most. A smaller secondary penalty keeps
+				neighboring rows reasonably balanced.
+			*/
+			const score =
+				heightDifference * 12 +
+				unevenness * 0.35;
 
 			return {
 				rows,
+				totalHeight,
+				heightDifference,
+				score
+			};
+		}
+
+		function buildJustifiedWallpaperRows(photos, canvasWidth, canvasHeight) {
+			/*
+				Randomly search for a true justified layout using 15–20 photos.
+
+				Every row fills the width by resizing all pictures in that row
+				proportionally. No picture is cropped, stretched, or widened
+				independently. The optimizer chooses the image order and row
+				breaks that come closest to the exact canvas height.
+			*/
+			const gap = 8;
+			const horizontalPadding = 8;
+			const verticalPadding = 8;
+			const usableWidth = canvasWidth - horizontalPadding * 2;
+			const usableHeight = canvasHeight - verticalPadding * 2;
+
+			const minimumCount = Math.min(15, Math.max(1, photos.length));
+			const maximumCount = Math.min(
+				20,
+				Math.max(minimumCount, photos.length)
+			);
+
+			let bestCandidate = null;
+
+			for (
+				let desiredCount = minimumCount;
+				desiredCount <= maximumCount;
+				desiredCount++
+			) {
+				/*
+					At this canvas size, four or five rows keep photos large.
+				*/
+				const possibleRowCounts = [4, 5];
+
+				for (const rowCount of possibleRowCounts) {
+					const partitions = createRowPartitions(
+						desiredCount,
+						rowCount,
+						2,
+						6
+					);
+
+					if (partitions.length === 0) {
+						continue;
+					}
+
+					for (let attempt = 0; attempt < 180; attempt++) {
+						const selectedPhotos = shuffleArray(
+							makePhotoPool(photos, desiredCount)
+						);
+
+						/*
+							Randomly sample partitions instead of always using
+							the same row pattern.
+						*/
+						const partition =
+							partitions[
+								Math.floor(Math.random() * partitions.length)
+							];
+
+						const candidate = scoreJustifiedCandidate(
+							selectedPhotos,
+							partition,
+							usableWidth,
+							usableHeight,
+							gap
+						);
+
+						if (
+							candidate &&
+							(
+								!bestCandidate ||
+								candidate.score < bestCandidate.score
+							)
+						) {
+							bestCandidate = {
+								...candidate,
+								photoCount: desiredCount
+							};
+						}
+					}
+				}
+			}
+
+			if (!bestCandidate) {
+				throw new Error(
+					"Could not build a balanced proportional mosaic."
+				);
+			}
+
+			/*
+				Center the tiny unavoidable height remainder. The search usually
+				keeps this to only a few pixels. Crucially, no image is distorted
+				to absorb it.
+			*/
+			const extraVerticalSpace = Math.max(
+				0,
+				usableHeight - bestCandidate.totalHeight
+			);
+
+			return {
+				rows: bestCandidate.rows,
 				gap,
 				horizontalPadding,
-				verticalPadding,
-				usableWidth
+				verticalPadding:
+					verticalPadding + extraVerticalSpace / 2,
+				usableWidth,
+				photoCount: bestCandidate.photoCount,
+				heightDifference: bestCandidate.heightDifference
 			};
 		}
 
@@ -1846,19 +1968,7 @@
 				for (let index = 0; index < row.photos.length; index++) {
 					const photo = row.photos[index];
 					const image = loadedImageMap.get(photo);
-
-					let width = row.height * photo.ratio;
-
-					/*
-						Make the last image absorb tiny rounding differences so
-						every row reaches the right edge perfectly.
-					*/
-					if (index === row.photos.length - 1) {
-						width =
-							layout.horizontalPadding +
-							layout.usableWidth -
-							x;
-					}
+					const width = row.height * photo.ratio;
 
 					context.drawImage(
 						image,
