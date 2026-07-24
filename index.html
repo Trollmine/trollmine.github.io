@@ -688,6 +688,89 @@
 			transform: translate(-50%, 0);
 		}
 
+		.wallpaper-preview {
+			position: fixed;
+			inset: 0;
+			z-index: 500;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			padding: 24px;
+			background: rgba(0, 0, 0, 0.72);
+			backdrop-filter: blur(8px);
+			-webkit-backdrop-filter: blur(8px);
+		}
+
+		.wallpaper-preview.visible {
+			display: flex;
+		}
+
+		.wallpaper-preview-card {
+			width: min(1100px, 96vw);
+			max-height: 94vh;
+			padding: 14px;
+			border-radius: 18px;
+			background: #ffffff;
+			box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+		}
+
+		.wallpaper-preview-image {
+			display: block;
+			width: 100%;
+			max-height: calc(94vh - 92px);
+			aspect-ratio: 16 / 9;
+			object-fit: contain;
+			border-radius: 10px;
+			background: #f2f2f2;
+		}
+
+		.wallpaper-preview-actions {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: center;
+			gap: 10px;
+			margin-top: 12px;
+		}
+
+		.wallpaper-action {
+			min-width: 140px;
+			height: 44px;
+			padding: 0 18px;
+			border: 1px solid rgba(0, 0, 0, 0.12);
+			border-radius: 11px;
+			background: #ffffff;
+			color: #111111;
+			font-family: inherit;
+			font-size: 0.88rem;
+			font-weight: 800;
+			cursor: pointer;
+		}
+
+		.wallpaper-action.primary {
+			border-color: transparent;
+			background: linear-gradient(135deg, #836fff, #6451d8);
+			color: #ffffff;
+		}
+
+		.wallpaper-action:hover {
+			transform: translateY(-1px);
+		}
+
+		@media (max-width: 600px) {
+			.wallpaper-preview {
+				padding: 10px;
+			}
+
+			.wallpaper-preview-card {
+				padding: 10px;
+			}
+
+			.wallpaper-action {
+				flex: 1;
+				min-width: 110px;
+			}
+		}
+
 		#folderInput {
 			display: none;
 		}
@@ -1018,6 +1101,42 @@
 		</div>
 
 		<div class="gallery-toast" id="galleryToast" role="status" aria-live="polite"></div>
+
+		<div class="wallpaper-preview" id="wallpaperPreview" aria-hidden="true">
+			<div class="wallpaper-preview-card">
+				<img
+					class="wallpaper-preview-image"
+					id="wallpaperPreviewImage"
+					alt="Generated mosaic wallpaper preview"
+				>
+
+				<div class="wallpaper-preview-actions">
+					<button
+						class="wallpaper-action primary"
+						id="downloadWallpaperButton"
+						type="button"
+					>
+						Download
+					</button>
+
+					<button
+						class="wallpaper-action"
+						id="remakeWallpaperButton"
+						type="button"
+					>
+						Remake
+					</button>
+
+					<button
+						class="wallpaper-action"
+						id="closeWallpaperPreviewButton"
+						type="button"
+					>
+						Cancel
+					</button>
+				</div>
+			</div>
+		</div>
 	</section>
 
 	<button
@@ -1203,6 +1322,15 @@
 		const generateBackgroundButton =
 			document.getElementById("generateBackgroundButton");
 		const galleryToast = document.getElementById("galleryToast");
+		const wallpaperPreview = document.getElementById("wallpaperPreview");
+		const wallpaperPreviewImage =
+			document.getElementById("wallpaperPreviewImage");
+		const downloadWallpaperButton =
+			document.getElementById("downloadWallpaperButton");
+		const remakeWallpaperButton =
+			document.getElementById("remakeWallpaperButton");
+		const closeWallpaperPreviewButton =
+			document.getElementById("closeWallpaperPreviewButton");
 		const zoomDisplay = document.getElementById("zoomDisplay");
 
 		let galleryImages = [];
@@ -1562,123 +1690,220 @@
 			});
 		}
 
-		function createWallpaperLayout(imageCount) {
+		let generatedWallpaperBlob = null;
+		let generatedWallpaperUrl = null;
+
+		function buildJustifiedWallpaperRows(photos, canvasWidth, canvasHeight) {
 			/*
-				Randomized templates. Every template fills a 2560 × 1440 canvas.
-				Each rectangle is stored as fractions of the full canvas.
+				Create enough randomized images to fill the whole canvas.
+
+				Every row is justified to the full width. Images keep their
+				original aspect ratio, so nothing is cropped or stretched.
+				The final row is accepted only when the remaining unfilled
+				width is below this limit.
 			*/
-			const templates = [
-				[
-					[0, 0, 0.58, 0.56],
-					[0.58, 0, 0.42, 0.56],
-					[0, 0.56, 0.32, 0.44],
-					[0.32, 0.56, 0.36, 0.44],
-					[0.68, 0.56, 0.32, 0.44]
-				],
-				[
-					[0, 0, 1, 0.42],
-					[0, 0.42, 0.46, 0.58],
-					[0.46, 0.42, 0.27, 0.58],
-					[0.73, 0.42, 0.27, 0.58]
-				],
-				[
-					[0, 0, 0.34, 1],
-					[0.34, 0, 0.66, 0.48],
-					[0.34, 0.48, 0.33, 0.52],
-					[0.67, 0.48, 0.33, 0.52]
-				],
-				[
-					[0, 0, 0.5, 0.5],
-					[0.5, 0, 0.5, 0.5],
-					[0, 0.5, 0.25, 0.5],
-					[0.25, 0.5, 0.5, 0.5],
-					[0.75, 0.5, 0.25, 0.5]
-				],
-				[
-					[0, 0, 0.64, 0.64],
-					[0.64, 0, 0.36, 0.32],
-					[0.64, 0.32, 0.36, 0.32],
-					[0, 0.64, 0.32, 0.36],
-					[0.32, 0.64, 0.34, 0.36],
-					[0.66, 0.64, 0.34, 0.36]
-				]
-			];
+			const gap = 10;
+			const horizontalPadding = 10;
+			const verticalPadding = 10;
+			const usableWidth = canvasWidth - horizontalPadding * 2;
+			const usableHeight = canvasHeight - verticalPadding * 2;
+			const targetRowHeight = 250;
+			const remainingWidthLimit = 90;
 
-			const suitableTemplates = templates.filter(
-				template => template.length <= imageCount
-			);
+			const pool = shuffleArray(photos);
+			let poolIndex = 0;
+			const rows = [];
+			let estimatedHeight = 0;
 
-			if (suitableTemplates.length > 0) {
-				return suitableTemplates[
-					Math.floor(Math.random() * suitableTemplates.length)
-				];
+			function nextPhoto() {
+				if (poolIndex >= pool.length) {
+					const reshuffled = shuffleArray(photos);
+					pool.splice(0, pool.length, ...reshuffled);
+					poolIndex = 0;
+				}
+
+				return pool[poolIndex++];
 			}
 
-			/*
-				Fallback for folders containing only one or two pictures.
-			*/
-			if (imageCount === 1) {
-				return [[0, 0, 1, 1]];
-			}
+			while (estimatedHeight < usableHeight) {
+				const row = [];
+				let ratioTotal = 0;
 
-			return [
-				[0, 0, 0.5, 1],
-				[0.5, 0, 0.5, 1]
-			];
-		}
+				while (true) {
+					const photo = nextPhoto();
+					row.push(photo);
+					ratioTotal += photo.ratio;
 
-		function choosePhotosForLayout(photos, layout) {
-			/*
-				Keep the result random, but favor pictures whose natural
-				aspect ratios are closest to each mosaic slot.
+					const estimatedRowWidth =
+						ratioTotal * targetRowHeight +
+						gap * (row.length - 1);
 
-				This greatly reduces empty white space while still guaranteeing
-				that no image is cropped or distorted.
-			*/
-			const available = shuffleArray(photos);
-			const selected = [];
+					const remainingWidth = usableWidth - estimatedRowWidth;
 
-			for (const rectangle of layout) {
-				const slotRatio = rectangle[2] / rectangle[3];
-
-				let bestIndex = 0;
-				let bestScore = Infinity;
-
-				for (let index = 0; index < available.length; index++) {
-					const photoRatio = available[index].ratio;
+					if (
+						estimatedRowWidth >= usableWidth ||
+						Math.abs(remainingWidth) <= remainingWidthLimit
+					) {
+						break;
+					}
 
 					/*
-						Logarithmic ratio distance treats portrait and landscape
-						differences more evenly than simple subtraction.
+						A safety cap prevents a row from becoming absurdly dense
+						when a folder contains lots of very narrow portraits.
 					*/
-					const ratioDifference = Math.abs(
-						Math.log(photoRatio / slotRatio)
-					);
-
-					/*
-						A small random term prevents the exact same images from
-						being chosen every time when several are similarly shaped.
-					*/
-					const score = ratioDifference + Math.random() * 0.12;
-
-					if (score < bestScore) {
-						bestScore = score;
-						bestIndex = index;
+					if (row.length >= 12) {
+						break;
 					}
 				}
 
-				selected.push(available.splice(bestIndex, 1)[0]);
+				const rowHeight =
+					(usableWidth - gap * (row.length - 1)) / ratioTotal;
+
+				rows.push({
+					photos: row,
+					ratioTotal,
+					height: rowHeight
+				});
+
+				estimatedHeight += rowHeight;
+
+				if (rows.length > 1) {
+					estimatedHeight += gap;
+				}
 
 				/*
-					When the folder has fewer pictures than slots, refill the
-					pool and allow repeats rather than leaving a slot empty.
+					Safety cap for extremely unusual folders.
 				*/
-				if (available.length === 0 && selected.length < layout.length) {
-					available.push(...shuffleArray(photos));
+				if (rows.length >= 20) {
+					break;
 				}
 			}
 
-			return selected;
+			/*
+				Scale all row heights together so the complete mosaic fills the
+				full 2560 × 1440 canvas exactly.
+			*/
+			const totalGapHeight = gap * Math.max(0, rows.length - 1);
+			const rawRowsHeight = rows.reduce(
+				(total, row) => total + row.height,
+				0
+			);
+
+			const heightScale =
+				(usableHeight - totalGapHeight) / rawRowsHeight;
+
+			for (const row of rows) {
+				row.height *= heightScale;
+			}
+
+			return {
+				rows,
+				gap,
+				horizontalPadding,
+				verticalPadding,
+				usableWidth
+			};
+		}
+
+		async function renderMosaicWallpaper() {
+			const canvas = document.createElement("canvas");
+			canvas.width = 2560;
+			canvas.height = 1440;
+
+			const context = canvas.getContext("2d", {
+				alpha: false
+			});
+
+			context.fillStyle = "#ffffff";
+			context.fillRect(0, 0, canvas.width, canvas.height);
+
+			const layout = buildJustifiedWallpaperRows(
+				galleryImages,
+				canvas.width,
+				canvas.height
+			);
+
+			const uniquePhotos = [
+				...new Set(
+					layout.rows.flatMap(row => row.photos)
+				)
+			];
+
+			const loadedImageMap = new Map();
+
+			await Promise.all(
+				uniquePhotos.map(async photo => {
+					const loadedImage = await loadCanvasImage(photo.src);
+					loadedImageMap.set(photo, loadedImage);
+				})
+			);
+
+			let y = layout.verticalPadding;
+
+			for (const row of layout.rows) {
+				let x = layout.horizontalPadding;
+
+				for (let index = 0; index < row.photos.length; index++) {
+					const photo = row.photos[index];
+					const image = loadedImageMap.get(photo);
+
+					let width = row.height * photo.ratio;
+
+					/*
+						Make the last image absorb tiny rounding differences so
+						every row reaches the right edge perfectly.
+					*/
+					if (index === row.photos.length - 1) {
+						width =
+							layout.horizontalPadding +
+							layout.usableWidth -
+							x;
+					}
+
+					context.drawImage(
+						image,
+						x,
+						y,
+						width,
+						row.height
+					);
+
+					x += width + layout.gap;
+				}
+
+				y += row.height + layout.gap;
+			}
+
+			return new Promise((resolve, reject) => {
+				canvas.toBlob(
+					blob => {
+						if (blob) {
+							resolve(blob);
+						} else {
+							reject(new Error("Could not create the wallpaper."));
+						}
+					},
+					"image/png"
+				);
+			});
+		}
+
+		function closeWallpaperPreview() {
+			wallpaperPreview.classList.remove("visible");
+			wallpaperPreview.setAttribute("aria-hidden", "true");
+		}
+
+		function showWallpaperPreview(blob) {
+			if (generatedWallpaperUrl) {
+				URL.revokeObjectURL(generatedWallpaperUrl);
+			}
+
+			generatedWallpaperBlob = blob;
+			generatedWallpaperUrl = URL.createObjectURL(blob);
+
+			wallpaperPreviewImage.src = generatedWallpaperUrl;
+			wallpaperPreview.classList.add("visible");
+			wallpaperPreview.setAttribute("aria-hidden", "false");
 		}
 
 		async function generateMosaicBackground() {
@@ -1688,91 +1913,70 @@
 			}
 
 			generateBackgroundButton.disabled = true;
+			remakeWallpaperButton.disabled = true;
 			generateBackgroundButton.textContent = "Generating…";
+			remakeWallpaperButton.textContent = "Generating…";
 
 			try {
-				const canvas = document.createElement("canvas");
-				canvas.width = 2560;
-				canvas.height = 1440;
-
-				const context = canvas.getContext("2d", {
-					alpha: false
-				});
-
-				context.fillStyle = "#ffffff";
-				context.fillRect(0, 0, canvas.width, canvas.height);
-
-				const layout = createWallpaperLayout(galleryImages.length);
-				const chosenPhotos = choosePhotosForLayout(
-					galleryImages,
-					layout
-				);
-
-				const loadedImages = await Promise.all(
-					chosenPhotos.map(photo => loadCanvasImage(photo.src))
-				);
-
-				const gap = 12;
-
-				layout.forEach((rectangle, index) => {
-					const [fractionX, fractionY, fractionWidth, fractionHeight] =
-						rectangle;
-
-					const x = Math.round(fractionX * canvas.width);
-					const y = Math.round(fractionY * canvas.height);
-					const width = Math.round(fractionWidth * canvas.width);
-					const height = Math.round(fractionHeight * canvas.height);
-
-					const insetLeft = x === 0 ? gap : gap / 2;
-					const insetTop = y === 0 ? gap : gap / 2;
-					const insetRight =
-						x + width >= canvas.width ? gap : gap / 2;
-					const insetBottom =
-						y + height >= canvas.height ? gap : gap / 2;
-
-					drawImageContain(
-						context,
-						loadedImages[index],
-						x + insetLeft,
-						y + insetTop,
-						width - insetLeft - insetRight,
-						height - insetTop - insetBottom
-					);
-				});
-
-				const blob = await new Promise((resolve, reject) => {
-					canvas.toBlob(
-						result => {
-							if (result) {
-								resolve(result);
-							} else {
-								reject(new Error("Could not create the wallpaper."));
-							}
-						},
-						"image/png"
-					);
-				});
-
-				const downloadUrl = URL.createObjectURL(blob);
-				const link = document.createElement("a");
-
-				link.href = downloadUrl;
-				link.download = `trollmine-mosaic-${Date.now()}.png`;
-				document.body.appendChild(link);
-				link.click();
-				link.remove();
-
-				setTimeout(() => URL.revokeObjectURL(downloadUrl), 1500);
-
-				showGalleryToast("2560 × 1440 mosaic downloaded.");
+				const blob = await renderMosaicWallpaper();
+				showWallpaperPreview(blob);
 			} catch (error) {
 				console.error(error);
 				showGalleryToast("The mosaic could not be generated.");
 			} finally {
 				generateBackgroundButton.disabled = false;
+				remakeWallpaperButton.disabled = false;
 				generateBackgroundButton.textContent = "Generate Background";
+				remakeWallpaperButton.textContent = "Remake";
 			}
 		}
+
+		function downloadGeneratedWallpaper() {
+			if (!generatedWallpaperBlob || !generatedWallpaperUrl) {
+				return;
+			}
+
+			const link = document.createElement("a");
+			link.href = generatedWallpaperUrl;
+			link.download = `trollmine-mosaic-${Date.now()}.png`;
+
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+
+			showGalleryToast("2560 × 1440 mosaic downloaded.");
+		}
+
+		downloadWallpaperButton.addEventListener(
+			"click",
+			downloadGeneratedWallpaper
+		);
+
+		remakeWallpaperButton.addEventListener(
+			"click",
+			generateMosaicBackground
+		);
+
+		closeWallpaperPreviewButton.addEventListener(
+			"click",
+			closeWallpaperPreview
+		);
+
+		wallpaperPreview.addEventListener("click", event => {
+			if (event.target === wallpaperPreview) {
+				closeWallpaperPreview();
+			}
+		});
+
+		document.addEventListener("keydown", event => {
+			if (
+				event.key === "Escape" &&
+				wallpaperPreview.classList.contains("visible")
+			) {
+				closeWallpaperPreview();
+			}
+		});
+
 
 		generateBackgroundButton.addEventListener(
 			"click",
@@ -1846,6 +2050,12 @@
 		window.addEventListener("resize", () => {
 			if (galleryImages.length > 0) {
 				layoutMosaic();
+			}
+		});
+
+		window.addEventListener("beforeunload", () => {
+			if (generatedWallpaperUrl) {
+				URL.revokeObjectURL(generatedWallpaperUrl);
 			}
 		});
 
