@@ -1519,33 +1519,36 @@
 			return shuffled;
 		}
 
-		function drawImageCover(context, image, x, y, width, height) {
+		function drawImageContain(context, image, x, y, width, height) {
+			/*
+				Fit the entire image inside the available rectangle.
+
+				Nothing is cropped or stretched. The original width/height
+				ratio is always preserved, and any unused space stays white.
+			*/
 			const sourceRatio = image.naturalWidth / image.naturalHeight;
 			const targetRatio = width / height;
 
-			let sourceX = 0;
-			let sourceY = 0;
-			let sourceWidth = image.naturalWidth;
-			let sourceHeight = image.naturalHeight;
+			let drawWidth;
+			let drawHeight;
 
 			if (sourceRatio > targetRatio) {
-				sourceWidth = image.naturalHeight * targetRatio;
-				sourceX = (image.naturalWidth - sourceWidth) / 2;
+				drawWidth = width;
+				drawHeight = width / sourceRatio;
 			} else {
-				sourceHeight = image.naturalWidth / targetRatio;
-				sourceY = (image.naturalHeight - sourceHeight) / 2;
+				drawHeight = height;
+				drawWidth = height * sourceRatio;
 			}
+
+			const drawX = x + (width - drawWidth) / 2;
+			const drawY = y + (height - drawHeight) / 2;
 
 			context.drawImage(
 				image,
-				sourceX,
-				sourceY,
-				sourceWidth,
-				sourceHeight,
-				x,
-				y,
-				width,
-				height
+				drawX,
+				drawY,
+				drawWidth,
+				drawHeight
 			);
 		}
 
@@ -1624,6 +1627,60 @@
 			];
 		}
 
+		function choosePhotosForLayout(photos, layout) {
+			/*
+				Keep the result random, but favor pictures whose natural
+				aspect ratios are closest to each mosaic slot.
+
+				This greatly reduces empty white space while still guaranteeing
+				that no image is cropped or distorted.
+			*/
+			const available = shuffleArray(photos);
+			const selected = [];
+
+			for (const rectangle of layout) {
+				const slotRatio = rectangle[2] / rectangle[3];
+
+				let bestIndex = 0;
+				let bestScore = Infinity;
+
+				for (let index = 0; index < available.length; index++) {
+					const photoRatio = available[index].ratio;
+
+					/*
+						Logarithmic ratio distance treats portrait and landscape
+						differences more evenly than simple subtraction.
+					*/
+					const ratioDifference = Math.abs(
+						Math.log(photoRatio / slotRatio)
+					);
+
+					/*
+						A small random term prevents the exact same images from
+						being chosen every time when several are similarly shaped.
+					*/
+					const score = ratioDifference + Math.random() * 0.12;
+
+					if (score < bestScore) {
+						bestScore = score;
+						bestIndex = index;
+					}
+				}
+
+				selected.push(available.splice(bestIndex, 1)[0]);
+
+				/*
+					When the folder has fewer pictures than slots, refill the
+					pool and allow repeats rather than leaving a slot empty.
+				*/
+				if (available.length === 0 && selected.length < layout.length) {
+					available.push(...shuffleArray(photos));
+				}
+			}
+
+			return selected;
+		}
+
 		async function generateMosaicBackground() {
 			if (galleryImages.length === 0) {
 				showGalleryToast("Choose a folder with images first.");
@@ -1645,9 +1702,12 @@
 				context.fillStyle = "#ffffff";
 				context.fillRect(0, 0, canvas.width, canvas.height);
 
-				const randomizedPhotos = shuffleArray(galleryImages);
-				const layout = createWallpaperLayout(randomizedPhotos.length);
-				const chosenPhotos = randomizedPhotos.slice(0, layout.length);
+				const layout = createWallpaperLayout(galleryImages.length);
+				const chosenPhotos = choosePhotosForLayout(
+					galleryImages,
+					layout
+				);
+
 				const loadedImages = await Promise.all(
 					chosenPhotos.map(photo => loadCanvasImage(photo.src))
 				);
@@ -1670,7 +1730,7 @@
 					const insetBottom =
 						y + height >= canvas.height ? gap : gap / 2;
 
-					drawImageCover(
+					drawImageContain(
 						context,
 						loadedImages[index],
 						x + insetLeft,
