@@ -44,7 +44,7 @@
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			padding: 40px 20px;
+			padding: 88px 20px 40px;
 		}
 
 		.background-grid {
@@ -105,7 +105,6 @@
 			from {
 				transform: translate3d(-20px, -15px, 0) scale(1);
 			}
-
 			to {
 				transform: translate3d(45px, 35px, 0) scale(1.15);
 			}
@@ -116,6 +115,58 @@
 			inset: 0;
 			z-index: -2;
 			pointer-events: none;
+		}
+
+		.site-tabs {
+			position: fixed;
+			top: 18px;
+			left: 50%;
+			z-index: 200;
+			display: flex;
+			gap: 6px;
+			padding: 6px;
+			transform: translateX(-50%);
+			border: 1px solid rgba(255, 255, 255, 0.12);
+			border-radius: 16px;
+			background: rgba(15, 15, 24, 0.84);
+			backdrop-filter: blur(18px);
+			-webkit-backdrop-filter: blur(18px);
+			box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+		}
+
+		.tab-button {
+			padding: 10px 18px;
+			border: 0;
+			border-radius: 11px;
+			background: transparent;
+			color: #aaa7b6;
+			font-family: inherit;
+			font-size: 0.88rem;
+			font-weight: 700;
+			cursor: pointer;
+			transition:
+				background 0.2s ease,
+				color 0.2s ease,
+				transform 0.2s ease;
+		}
+
+		.tab-button:hover {
+			color: white;
+			transform: translateY(-1px);
+		}
+
+		.tab-button.active {
+			background: linear-gradient(135deg, #836fff, #6451d8);
+			color: white;
+			box-shadow: 0 6px 18px rgba(131, 111, 255, 0.35);
+		}
+
+		.tab-page {
+			display: none;
+		}
+
+		.tab-page.active {
+			display: block;
 		}
 
 		.page {
@@ -129,7 +180,6 @@
 				opacity: 0;
 				transform: translateY(35px) scale(0.97);
 			}
-
 			to {
 				opacity: 1;
 				transform: translateY(0) scale(1);
@@ -496,6 +546,7 @@
 			position: fixed;
 			right: 22px;
 			bottom: 22px;
+			z-index: 220;
 			display: flex;
 			align-items: center;
 			justify-content: center;
@@ -532,10 +583,184 @@
 			}
 		}
 
+		/* Gallery */
+
+		#galleryPage {
+			position: fixed;
+			inset: 0;
+			z-index: 50;
+			overflow: hidden;
+			background: #ffffff;
+			color: #111111;
+		}
+
+		.gallery-toolbar {
+			position: fixed;
+			top: 82px;
+			left: 50%;
+			z-index: 150;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 8px;
+			transform: translateX(-50%);
+			border: 1px solid rgba(0, 0, 0, 0.1);
+			border-radius: 16px;
+			background: rgba(255, 255, 255, 0.92);
+			backdrop-filter: blur(14px);
+			-webkit-backdrop-filter: blur(14px);
+			box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12);
+		}
+
+		.gallery-control {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			min-width: 42px;
+			height: 42px;
+			padding: 0 14px;
+			border: 1px solid rgba(0, 0, 0, 0.1);
+			border-radius: 11px;
+			background: #ffffff;
+			color: #111111;
+			font-family: inherit;
+			font-size: 0.84rem;
+			font-weight: 700;
+			cursor: pointer;
+			white-space: nowrap;
+			transition:
+				transform 0.2s ease,
+				background 0.2s ease;
+		}
+
+		.gallery-control:hover {
+			transform: translateY(-2px);
+			background: #f1f1f1;
+		}
+
+		.choose-folder-button {
+			background: #111111;
+			color: #ffffff;
+		}
+
+		.choose-folder-button:hover {
+			background: #292929;
+		}
+
+		#folderInput {
+			display: none;
+		}
+
+		.gallery-info {
+			min-width: 64px;
+			color: #555555;
+			font-size: 0.78rem;
+			font-weight: 700;
+			text-align: center;
+		}
+
+		.gallery-viewport {
+			position: absolute;
+			inset: 0;
+			overflow: hidden;
+			cursor: grab;
+			touch-action: none;
+			user-select: none;
+		}
+
+		.gallery-viewport.dragging {
+			cursor: grabbing;
+		}
+
+		.gallery-world {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			min-height: 100%;
+			padding: 148px 8px 40px;
+			transform-origin: 0 0;
+			will-change: transform;
+		}
+
+		.gallery-grid {
+			position: relative;
+			width: 100%;
+			min-height: 100px;
+		}
+
+		.gallery-item {
+			position: absolute;
+			overflow: hidden;
+			border-radius: 2px;
+			background: #eeeeee;
+			box-shadow: 0 1px 4px rgba(0, 0, 0, 0.09);
+		}
+
+		.gallery-item img {
+			display: block;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			pointer-events: none;
+			transition: transform 0.2s ease;
+		}
+
+		.gallery-item:hover img {
+			transform: scale(1.025);
+		}
+
+		.gallery-empty {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			width: min(90%, 520px);
+			transform: translate(-50%, -50%);
+			color: #666666;
+			text-align: center;
+			pointer-events: none;
+		}
+
+		.gallery-empty-icon {
+			margin-bottom: 18px;
+			font-size: 4rem;
+		}
+
+		.gallery-empty h2 {
+			margin-bottom: 10px;
+			color: #111111;
+			font-size: 1.7rem;
+		}
+
+		.gallery-empty p {
+			line-height: 1.6;
+		}
+
+		.gallery-file-name {
+			display: none;
+		}
+
+
+		@media (max-width: 1100px) {
+			.gallery-grid {
+				column-count: 4;
+			}
+		}
+
+		@media (max-width: 800px) {
+			.gallery-grid {
+				column-count: 3;
+			}
+		}
+
 		@media (max-width: 600px) {
 			body {
 				align-items: flex-start;
-				padding: 20px 14px 90px;
+				padding: 78px 14px 90px;
+			}
+
+			.site-tabs {
+				top: 10px;
 			}
 
 			.card {
@@ -562,6 +787,20 @@
 				width: 40px;
 				height: 40px;
 			}
+
+			.gallery-toolbar {
+				top: 68px;
+				max-width: calc(100vw - 16px);
+				overflow-x: auto;
+			}
+
+			.gallery-grid {
+				column-count: 2;
+			}
+
+			.gallery-world {
+				padding-top: 130px;
+			}
 		}
 
 		@media (prefers-reduced-motion: reduce) {
@@ -575,6 +814,11 @@
 </head>
 
 <body>
+	<nav class="site-tabs">
+		<button class="tab-button active" id="homeTab" type="button">Profile</button>
+		<button class="tab-button" id="galleryTab" type="button">Gallery</button>
+	</nav>
+
 	<div class="background-grid"></div>
 	<div class="noise"></div>
 
@@ -584,7 +828,7 @@
 
 	<canvas id="particles"></canvas>
 
-	<main class="page">
+	<main class="page tab-page active" id="homePage">
 		<section class="card" id="profileCard">
 			<div class="card-glow"></div>
 
@@ -596,7 +840,6 @@
 						class="avatar"
 						src="avatar.png"
 						alt="Trollmine profile picture"
-						onerror="this.src='https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Trollmine'"
 					>
 
 					<div class="status-dot" title="Online"></div>
@@ -622,9 +865,9 @@
 
 				<div class="tags">
 					<span class="tag">Roblox Developer</span>
-					<span class="tag">Luau</span>
-					<span class="tag">Scripter</span>
-					<span class="tag">UI Designer *</span>
+					<span class="tag">Lua</span>
+					<span class="tag">UI Designer</span>
+					<span class="tag">Game Creator</span>
 				</div>
 			</div>
 
@@ -638,12 +881,10 @@
 					rel="noopener noreferrer"
 				>
 					<div class="link-icon">💬</div>
-
 					<div class="link-info">
 						<span class="link-title">Discord</span>
 						<span class="link-description">Join my community</span>
 					</div>
-
 					<span class="link-arrow">›</span>
 				</a>
 
@@ -654,12 +895,10 @@
 					rel="noopener noreferrer"
 				>
 					<div class="link-icon">⌨</div>
-
 					<div class="link-info">
 						<span class="link-title">GitHub</span>
 						<span class="link-description">Check out my projects</span>
 					</div>
-
 					<span class="link-arrow">›</span>
 				</a>
 
@@ -670,12 +909,10 @@
 					rel="noopener noreferrer"
 				>
 					<div class="link-icon">◈</div>
-
 					<div class="link-info">
 						<span class="link-title">Roblox</span>
 						<span class="link-description">View my Roblox profile</span>
 					</div>
-
 					<span class="link-arrow">›</span>
 				</a>
 
@@ -686,12 +923,10 @@
 					rel="noopener noreferrer"
 				>
 					<div class="link-icon">▶</div>
-
 					<div class="link-info">
 						<span class="link-title">YouTube</span>
 						<span class="link-description">Watch my content</span>
 					</div>
-
 					<span class="link-arrow">›</span>
 				</a>
 			</div>
@@ -701,6 +936,43 @@
 			</p>
 		</section>
 	</main>
+
+	<section class="tab-page" id="galleryPage">
+		<div class="gallery-toolbar">
+			<label class="gallery-control choose-folder-button" for="folderInput">
+				Choose Folder
+			</label>
+
+			<input
+				id="folderInput"
+				type="file"
+				accept="image/*"
+				webkitdirectory
+				directory
+				multiple
+			>
+
+			<button class="gallery-control" id="zoomOutButton" type="button" title="Zoom out">−</button>
+			<div class="gallery-info" id="zoomDisplay">100%</div>
+			<button class="gallery-control" id="zoomInButton" type="button" title="Zoom in">+</button>
+			<button class="gallery-control" id="resetGalleryButton" type="button">Reset</button>
+		</div>
+
+		<div class="gallery-viewport" id="galleryViewport">
+			<div class="gallery-world" id="galleryWorld">
+				<div class="gallery-grid" id="galleryGrid"></div>
+			</div>
+
+			<div class="gallery-empty" id="galleryEmpty">
+				<div class="gallery-empty-icon">▦</div>
+				<h2>Your gallery is empty</h2>
+				<p>
+					Choose a folder containing images. They stay on your device
+					and are not uploaded anywhere.
+				</p>
+			</div>
+		</div>
+	</section>
 
 	<button
 		class="music-button"
@@ -714,7 +986,6 @@
 
 	<audio id="backgroundMusic" preload="auto" loop>
 		<source src="./music.mp3" type="audio/mpeg">
-		Your browser does not support audio playback.
 	</audio>
 
 	<script>
@@ -737,12 +1008,7 @@
 		function updateTyping() {
 			const currentPhrase = phrases[phraseIndex];
 
-			if (isDeleting) {
-				characterIndex--;
-			} else {
-				characterIndex++;
-			}
-
+			characterIndex += isDeleting ? -1 : 1;
 			typingText.textContent = currentPhrase.substring(0, characterIndex);
 
 			let delay = isDeleting ? 45 : 80;
@@ -770,14 +1036,9 @@
 		const MUSIC_PREFERENCE_KEY = "trollmineMusicPreference";
 		const savedMusicPreference = localStorage.getItem(MUSIC_PREFERENCE_KEY);
 
-		/*
-			If no preference has ever been saved, music defaults to enabled.
-			If the visitor previously disabled it, it stays disabled.
-		*/
 		let musicEnabled = savedMusicPreference !== "off";
 
 		backgroundMusic.volume = 0.35;
-
 
 		function updateMusicButton() {
 			if (musicEnabled && !backgroundMusic.paused) {
@@ -793,7 +1054,6 @@
 			}
 		}
 
-
 		async function playMusic() {
 			if (!musicEnabled) {
 				updateMusicButton();
@@ -804,67 +1064,38 @@
 				await backgroundMusic.play();
 				updateMusicButton();
 			} catch (error) {
-				/*
-					The browser probably blocked autoplay because the visitor
-					has not interacted with the page yet.
-
-					The first click, touch or key press will try again.
-				*/
 				console.log("Autoplay blocked until visitor interaction.");
 				updateMusicButton();
 			}
 		}
-
 
 		function pauseMusic() {
 			backgroundMusic.pause();
 			updateMusicButton();
 		}
 
-
 		async function toggleMusic(event) {
-			/*
-				Stops the document click listener from also running when
-				the visitor clicks the music button.
-			*/
 			event.stopPropagation();
 
 			if (musicEnabled && !backgroundMusic.paused) {
 				musicEnabled = false;
-
 				localStorage.setItem(MUSIC_PREFERENCE_KEY, "off");
-
 				pauseMusic();
 			} else {
 				musicEnabled = true;
-
 				localStorage.setItem(MUSIC_PREFERENCE_KEY, "on");
-
 				await playMusic();
 			}
 		}
 
-
 		async function startMusicAfterInteraction() {
-			/*
-				Only starts after interaction when the visitor has not
-				disabled music.
-			*/
 			if (musicEnabled && backgroundMusic.paused) {
 				await playMusic();
 			}
 		}
 
-
 		musicButton.addEventListener("click", toggleMusic);
 
-
-		/*
-			Try autoplaying immediately.
-
-			This may work for returning visitors, but browsers can still
-			block it until they interact with the website.
-		*/
 		window.addEventListener("load", () => {
 			if (musicEnabled) {
 				playMusic();
@@ -873,45 +1104,416 @@
 			}
 		});
 
-
-		/*
-			If autoplay was blocked, the first click, touch or key press
-			anywhere on the page starts the music.
-
-			These listeners remove themselves automatically after firing once.
-		*/
-		document.addEventListener(
-			"click",
-			startMusicAfterInteraction,
-			{ once: true }
-		);
-
-		document.addEventListener(
-			"touchstart",
-			startMusicAfterInteraction,
-			{ once: true }
-		);
-
-		document.addEventListener(
-			"keydown",
-			startMusicAfterInteraction,
-			{ once: true }
-		);
-
+		document.addEventListener("click", startMusicAfterInteraction, { once: true });
+		document.addEventListener("touchstart", startMusicAfterInteraction, { once: true });
+		document.addEventListener("keydown", startMusicAfterInteraction, { once: true });
 
 		backgroundMusic.addEventListener("play", updateMusicButton);
 		backgroundMusic.addEventListener("pause", updateMusicButton);
 
 		backgroundMusic.addEventListener("error", () => {
-			console.error("The music file could not be loaded.");
-
 			musicButton.textContent = "⚠";
 			musicButton.classList.remove("playing");
 			musicButton.title = "The music file could not be loaded";
 		});
 
-
 		updateMusicButton();
+
+
+		// Tabs
+
+		const homeTab = document.getElementById("homeTab");
+		const galleryTab = document.getElementById("galleryTab");
+		const homePage = document.getElementById("homePage");
+		const galleryPage = document.getElementById("galleryPage");
+
+		function openTab(tabName) {
+			const showingGallery = tabName === "gallery";
+
+			homeTab.classList.toggle("active", !showingGallery);
+			galleryTab.classList.toggle("active", showingGallery);
+
+			homePage.classList.toggle("active", !showingGallery);
+			galleryPage.classList.toggle("active", showingGallery);
+
+			musicButton.style.display = showingGallery ? "none" : "flex";
+			document.body.style.overflow = showingGallery ? "hidden" : "";
+		}
+
+		homeTab.addEventListener("click", () => openTab("home"));
+		galleryTab.addEventListener("click", () => openTab("gallery"));
+
+
+		// Gallery — justified mosaic layout
+
+		const folderInput = document.getElementById("folderInput");
+		const galleryGrid = document.getElementById("galleryGrid");
+		const galleryEmpty = document.getElementById("galleryEmpty");
+		const galleryViewport = document.getElementById("galleryViewport");
+		const galleryWorld = document.getElementById("galleryWorld");
+		const zoomInButton = document.getElementById("zoomInButton");
+		const zoomOutButton = document.getElementById("zoomOutButton");
+		const resetGalleryButton = document.getElementById("resetGalleryButton");
+		const zoomDisplay = document.getElementById("zoomDisplay");
+
+		let galleryImages = [];
+		let galleryScale = 1;
+		let galleryX = 0;
+		let galleryY = 0;
+		let draggingGallery = false;
+		let previousPointerX = 0;
+		let previousPointerY = 0;
+
+		const minimumZoom = 0.25;
+		const maximumZoom = 4;
+		const mosaicGap = 7;
+
+		function isImageFile(file) {
+			if (file.type.startsWith("image/")) {
+				return true;
+			}
+
+			const extension = file.name.split(".").pop().toLowerCase();
+
+			return [
+				"jpg", "jpeg", "png", "gif", "webp",
+				"avif", "bmp", "svg"
+			].includes(extension);
+		}
+
+		function readFileAsDataURL(file) {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+
+				reader.onload = () => resolve(reader.result);
+				reader.onerror = () => reject(reader.error);
+
+				reader.readAsDataURL(file);
+			});
+		}
+
+		function measureImage(dataUrl, file) {
+			return new Promise((resolve, reject) => {
+				const image = new Image();
+
+				image.onload = () => {
+					resolve({
+						file,
+						src: dataUrl,
+						width: image.naturalWidth,
+						height: image.naturalHeight,
+						ratio: image.naturalWidth / image.naturalHeight
+					});
+				};
+
+				image.onerror = () => reject(
+					new Error(`Could not read ${file.name}`)
+				);
+
+				image.src = dataUrl;
+			});
+		}
+
+		async function loadGalleryImage(file) {
+			const dataUrl = await readFileAsDataURL(file);
+			return measureImage(dataUrl, file);
+		}
+
+		function applyGalleryTransform() {
+			galleryWorld.style.transform =
+				`translate(${galleryX}px, ${galleryY}px) scale(${galleryScale})`;
+
+			zoomDisplay.textContent = `${Math.round(galleryScale * 100)}%`;
+		}
+
+		function resetGalleryView() {
+			galleryScale = 1;
+			galleryX = 0;
+			galleryY = 0;
+			applyGalleryTransform();
+		}
+
+		function createGalleryElement(photo) {
+			const item = document.createElement("figure");
+			item.className = "gallery-item";
+
+			const image = document.createElement("img");
+			image.src = photo.src;
+			image.alt = photo.file.name;
+			image.draggable = false;
+
+			const caption = document.createElement("figcaption");
+			caption.className = "gallery-file-name";
+			caption.textContent =
+				photo.file.webkitRelativePath || photo.file.name;
+
+			item.appendChild(image);
+			item.appendChild(caption);
+
+			photo.element = item;
+			return item;
+		}
+
+		function layoutMosaic() {
+			if (galleryImages.length === 0) {
+				galleryGrid.style.height = "0px";
+				return;
+			}
+
+			const availableWidth = Math.max(
+				320,
+				galleryWorld.clientWidth - 16
+			);
+
+			/*
+				Larger screens use taller rows. The last row is left at its
+				natural target height instead of being stretched too far.
+			*/
+			const targetRowHeight = Math.max(
+				150,
+				Math.min(290, availableWidth / 5.2)
+			);
+
+			let currentRow = [];
+			let currentRatioTotal = 0;
+			let top = 0;
+
+			function placeRow(row, ratioTotal, isLastRow) {
+				if (row.length === 0) {
+					return;
+				}
+
+				const totalGaps = mosaicGap * (row.length - 1);
+				const usableWidth = availableWidth - totalGaps;
+
+				let rowHeight = usableWidth / ratioTotal;
+
+				if (isLastRow) {
+					rowHeight = Math.min(rowHeight, targetRowHeight);
+				}
+
+				let left = 0;
+
+				for (const photo of row) {
+					const width = rowHeight * photo.ratio;
+
+					photo.element.style.left = `${left}px`;
+					photo.element.style.top = `${top}px`;
+					photo.element.style.width = `${width}px`;
+					photo.element.style.height = `${rowHeight}px`;
+
+					left += width + mosaicGap;
+				}
+
+				top += rowHeight + mosaicGap;
+			}
+
+			for (const photo of galleryImages) {
+				currentRow.push(photo);
+				currentRatioTotal += photo.ratio;
+
+				const estimatedWidth =
+					currentRatioTotal * targetRowHeight +
+					mosaicGap * (currentRow.length - 1);
+
+				if (estimatedWidth >= availableWidth) {
+					placeRow(currentRow, currentRatioTotal, false);
+					currentRow = [];
+					currentRatioTotal = 0;
+				}
+			}
+
+			placeRow(currentRow, currentRatioTotal, true);
+			galleryGrid.style.height = `${Math.max(0, top - mosaicGap)}px`;
+		}
+
+		folderInput.addEventListener("change", async () => {
+			galleryGrid.replaceChildren();
+			galleryImages = [];
+
+			const imageFiles = Array.from(folderInput.files)
+				.filter(isImageFile)
+				.sort((firstFile, secondFile) =>
+					firstFile.name.localeCompare(secondFile.name, undefined, {
+						numeric: true,
+						sensitivity: "base"
+					})
+				);
+
+			if (imageFiles.length === 0) {
+				galleryEmpty.style.display = "block";
+				resetGalleryView();
+				return;
+			}
+
+			galleryEmpty.style.display = "block";
+			galleryEmpty.querySelector("h2").textContent = "Loading gallery…";
+			galleryEmpty.querySelector("p").textContent =
+				`Reading ${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"} from your folder.`;
+
+			const loaded = await Promise.allSettled(
+				imageFiles.map(loadGalleryImage)
+			);
+
+			galleryImages = loaded
+				.filter(result => result.status === "fulfilled")
+				.map(result => result.value);
+
+			if (galleryImages.length === 0) {
+				galleryEmpty.querySelector("h2").textContent =
+					"No readable images found";
+				galleryEmpty.querySelector("p").textContent =
+					"Try JPG, PNG, WebP, GIF or another browser-supported image format.";
+				resetGalleryView();
+				return;
+			}
+
+			const fragment = document.createDocumentFragment();
+
+			for (const photo of galleryImages) {
+				fragment.appendChild(createGalleryElement(photo));
+			}
+
+			galleryGrid.appendChild(fragment);
+			galleryEmpty.style.display = "none";
+
+			requestAnimationFrame(() => {
+				layoutMosaic();
+				resetGalleryView();
+			});
+		});
+
+		function setGalleryZoom(newScale, originX, originY) {
+			const boundedScale = Math.min(
+				maximumZoom,
+				Math.max(minimumZoom, newScale)
+			);
+
+			if (boundedScale === galleryScale) {
+				return;
+			}
+
+			const viewportBounds = galleryViewport.getBoundingClientRect();
+			const cursorX = originX - viewportBounds.left;
+			const cursorY = originY - viewportBounds.top;
+
+			const worldX = (cursorX - galleryX) / galleryScale;
+			const worldY = (cursorY - galleryY) / galleryScale;
+
+			galleryScale = boundedScale;
+			galleryX = cursorX - worldX * galleryScale;
+			galleryY = cursorY - worldY * galleryScale;
+
+			applyGalleryTransform();
+		}
+
+		galleryViewport.addEventListener(
+			"wheel",
+			event => {
+				event.preventDefault();
+
+				const zoomMultiplier = event.deltaY < 0 ? 1.12 : 0.89;
+
+				setGalleryZoom(
+					galleryScale * zoomMultiplier,
+					event.clientX,
+					event.clientY
+				);
+			},
+			{ passive: false }
+		);
+
+		zoomInButton.addEventListener("click", () => {
+			const bounds = galleryViewport.getBoundingClientRect();
+
+			setGalleryZoom(
+				galleryScale * 1.2,
+				bounds.left + bounds.width / 2,
+				bounds.top + bounds.height / 2
+			);
+		});
+
+		zoomOutButton.addEventListener("click", () => {
+			const bounds = galleryViewport.getBoundingClientRect();
+
+			setGalleryZoom(
+				galleryScale / 1.2,
+				bounds.left + bounds.width / 2,
+				bounds.top + bounds.height / 2
+			);
+		});
+
+		resetGalleryButton.addEventListener("click", resetGalleryView);
+
+		galleryViewport.addEventListener("pointerdown", event => {
+			if (event.button !== 0) {
+				return;
+			}
+
+			draggingGallery = true;
+			previousPointerX = event.clientX;
+			previousPointerY = event.clientY;
+
+			galleryViewport.classList.add("dragging");
+			galleryViewport.setPointerCapture(event.pointerId);
+		});
+
+		galleryViewport.addEventListener("pointermove", event => {
+			if (!draggingGallery) {
+				return;
+			}
+
+			galleryX += event.clientX - previousPointerX;
+			galleryY += event.clientY - previousPointerY;
+
+			previousPointerX = event.clientX;
+			previousPointerY = event.clientY;
+
+			applyGalleryTransform();
+		});
+
+		function stopGalleryDragging(event) {
+			draggingGallery = false;
+			galleryViewport.classList.remove("dragging");
+
+			if (
+				event.pointerId !== undefined &&
+				galleryViewport.hasPointerCapture(event.pointerId)
+			) {
+				galleryViewport.releasePointerCapture(event.pointerId);
+			}
+		}
+
+		galleryViewport.addEventListener("pointerup", stopGalleryDragging);
+		galleryViewport.addEventListener("pointercancel", stopGalleryDragging);
+
+		document.addEventListener("keydown", event => {
+			if (!galleryPage.classList.contains("active")) {
+				return;
+			}
+
+			const bounds = galleryViewport.getBoundingClientRect();
+			const centerX = bounds.left + bounds.width / 2;
+			const centerY = bounds.top + bounds.height / 2;
+
+			if (event.key === "+" || event.key === "=") {
+				setGalleryZoom(galleryScale * 1.2, centerX, centerY);
+			}
+
+			if (event.key === "-") {
+				setGalleryZoom(galleryScale / 1.2, centerX, centerY);
+			}
+
+			if (event.key === "0") {
+				resetGalleryView();
+			}
+		});
+
+		window.addEventListener("resize", () => {
+			if (galleryImages.length > 0) {
+				layoutMosaic();
+			}
+		});
 
 
 		// Mouse tilt effect
@@ -952,7 +1554,6 @@
 		function resizeCanvas() {
 			canvas.width = window.innerWidth;
 			canvas.height = window.innerHeight;
-
 			createParticles();
 		}
 
@@ -997,7 +1598,6 @@
 				}
 
 				context.beginPath();
-
 				context.arc(
 					particle.x,
 					particle.y,
