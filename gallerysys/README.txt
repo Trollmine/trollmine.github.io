@@ -1,12 +1,9 @@
-The main site remains in index.html so the existing profile, link and music systems are preserved.
-
-Restored in this build:
-- free gallery panning
-- zoom range from 5% to 800%
-- playable gallery videos
-- images and videos accepted by the folder picker
-- video frames usable by the wallpaper generator
-- full-source containment in every generated cell
-- no image cropping
-- no stretching
-- the earlier recursive wallpaper layout and settings/history systems
+Fixes in this build:
+- Favorite/prefer and disable buttons are clickable again.
+- Gallery panning no longer captures pointer input from those buttons.
+- Shift-click and right-click preference/disable shortcuts remain available.
+- Generated wallpapers containing videos show Preview video and Export WebM.
+- Video wallpapers animate the video cells for six seconds at 30 FPS.
+- Export format is WebM, suitable for animated wallpaper tools that support WebM.
+- Static PNG download remains available.
+- Image and video frames remain uncropped and unstretched.
