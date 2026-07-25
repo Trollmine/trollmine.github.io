@@ -1047,6 +1047,46 @@
 			border-radius: 2px;
 			background: #eeeeee;
 			box-shadow: 0 1px 4px rgba(0, 0, 0, 0.09);
+			transition:
+				opacity 0.18s ease,
+				filter 0.18s ease,
+				box-shadow 0.18s ease;
+		}
+
+		.gallery-item.favorite {
+			box-shadow:
+				0 0 0 4px #836fff,
+				0 8px 24px rgba(131, 111, 255, 0.32);
+		}
+
+		.gallery-item.favorite::after,
+		.gallery-item.disabled::after {
+			position: absolute;
+			top: 8px;
+			left: 8px;
+			z-index: 3;
+			padding: 6px 9px;
+			border-radius: 8px;
+			color: #ffffff;
+			font-size: 0.68rem;
+			font-weight: 850;
+			letter-spacing: 0.04em;
+			pointer-events: none;
+		}
+
+		.gallery-item.favorite::after {
+			content: "FAVORITE";
+			background: rgba(102, 75, 225, 0.92);
+		}
+
+		.gallery-item.disabled {
+			opacity: 0.32;
+			filter: grayscale(1);
+		}
+
+		.gallery-item.disabled::after {
+			content: "DISABLED";
+			background: rgba(20, 20, 20, 0.9);
 		}
 
 		.gallery-item img {
@@ -1765,6 +1805,108 @@
 		let previousPointerX = 0;
 		let previousPointerY = 0;
 
+		const FAVORITE_MEDIA_KEY = "trollmineFavoriteMedia";
+		const DISABLED_MEDIA_KEY = "trollmineDisabledMedia";
+
+		function readStoredMediaSet(storageKey) {
+			try {
+				const storedValue = JSON.parse(localStorage.getItem(storageKey) || "[]");
+				return new Set(Array.isArray(storedValue) ? storedValue : []);
+			} catch {
+				return new Set();
+			}
+		}
+
+		const favoriteMediaPaths = readStoredMediaSet(FAVORITE_MEDIA_KEY);
+		const disabledMediaPaths = readStoredMediaSet(DISABLED_MEDIA_KEY);
+
+		function getMediaPath(photo) {
+			return photo.file.webkitRelativePath || photo.file.name;
+		}
+
+		function saveMediaStates() {
+			localStorage.setItem(
+				FAVORITE_MEDIA_KEY,
+				JSON.stringify([...favoriteMediaPaths])
+			);
+
+			localStorage.setItem(
+				DISABLED_MEDIA_KEY,
+				JSON.stringify([...disabledMediaPaths])
+			);
+		}
+
+		function updateMediaStateAppearance(photo) {
+			if (!photo.element) {
+				return;
+			}
+
+			photo.element.classList.toggle("favorite", photo.favorite);
+			photo.element.classList.toggle("disabled", photo.disabled);
+		}
+
+		function toggleFavoriteMedia(photo) {
+			const mediaPath = getMediaPath(photo);
+			photo.favorite = !photo.favorite;
+
+			if (photo.favorite) {
+				photo.disabled = false;
+				favoriteMediaPaths.add(mediaPath);
+				disabledMediaPaths.delete(mediaPath);
+
+				if (typeof preferredPhotos !== "undefined") {
+					preferredPhotos.add(photo);
+					excludedPhotos.delete(photo);
+				}
+
+				showGalleryToast("Media added to favorites.");
+			} else {
+				favoriteMediaPaths.delete(mediaPath);
+
+				if (typeof preferredPhotos !== "undefined") {
+					preferredPhotos.delete(photo);
+				}
+
+				showGalleryToast("Media removed from favorites.");
+			}
+
+			saveMediaStates();
+			updateMediaStateAppearance(photo);
+		}
+
+		function toggleDisabledMedia(photo) {
+			const mediaPath = getMediaPath(photo);
+			photo.disabled = !photo.disabled;
+
+			if (photo.disabled) {
+				photo.favorite = false;
+				disabledMediaPaths.add(mediaPath);
+				favoriteMediaPaths.delete(mediaPath);
+
+				if (typeof excludedPhotos !== "undefined") {
+					excludedPhotos.add(photo);
+					preferredPhotos.delete(photo);
+				}
+
+				showGalleryToast("Media disabled for wallpaper generation.");
+			} else {
+				disabledMediaPaths.delete(mediaPath);
+
+				if (typeof excludedPhotos !== "undefined") {
+					excludedPhotos.delete(photo);
+				}
+
+				showGalleryToast("Media enabled for wallpaper generation.");
+			}
+
+			saveMediaStates();
+			updateMediaStateAppearance(photo);
+		}
+
+		function getEnabledGalleryImages() {
+			return galleryImages.filter(photo => !photo.disabled);
+		}
+
 		const minimumZoom = 0.25;
 		const maximumZoom = 4;
 		const mosaicGap = 7;
@@ -1838,6 +1980,16 @@
 			const item = document.createElement("figure");
 			item.className = "gallery-item";
 
+			const mediaPath = getMediaPath(photo);
+			photo.favorite = favoriteMediaPaths.has(mediaPath);
+			photo.disabled = disabledMediaPaths.has(mediaPath);
+
+			if (photo.favorite && photo.disabled) {
+				photo.disabled = false;
+				disabledMediaPaths.delete(mediaPath);
+				saveMediaStates();
+			}
+
 			const image = document.createElement("img");
 			image.src = photo.src;
 			image.alt = photo.file.name;
@@ -1845,13 +1997,29 @@
 
 			const caption = document.createElement("figcaption");
 			caption.className = "gallery-file-name";
-			caption.textContent =
-				photo.file.webkitRelativePath || photo.file.name;
+			caption.textContent = mediaPath;
 
 			item.appendChild(image);
 			item.appendChild(caption);
 
+			item.addEventListener("click", event => {
+				if (!event.shiftKey && !event.ctrlKey) {
+					return;
+				}
+
+				event.preventDefault();
+				event.stopPropagation();
+
+				if (event.ctrlKey) {
+					toggleDisabledMedia(photo);
+					return;
+				}
+
+				toggleFavoriteMedia(photo);
+			});
+
 			photo.element = item;
+			updateMediaStateAppearance(photo);
 			return item;
 		}
 
@@ -2169,10 +2337,10 @@
 		}
 
 		function getGeneratorOptions() {
-			const availableCount = galleryImages.length;
+			const availableCount = getEnabledGalleryImages().length;
 
 			if (availableCount === 0) {
-				throw new Error("Choose a folder with images first.");
+				throw new Error("Enable at least one image before generating.");
 			}
 
 			const minimum = Math.min(
@@ -2427,10 +2595,20 @@
 			const targetWidth = canvasWidth - padding * 2;
 			const targetHeight = canvasHeight - padding * 2;
 			const targetRatio = targetWidth / targetHeight;
-			const selected = seededShuffle(
-				photos,
+			const favoritePhotos = seededShuffle(
+				photos.filter(photo => photo.favorite),
 				options.random
-			).slice(0, options.count);
+			);
+
+			const regularPhotos = seededShuffle(
+				photos.filter(photo => !photo.favorite),
+				options.random
+			);
+
+			const selected = [
+				...favoritePhotos,
+				...regularPhotos
+			].slice(0, options.count);
 
 			let bestTree = null;
 			let bestScore = Number.POSITIVE_INFINITY;
@@ -2507,7 +2685,7 @@
 			context.fillRect(0, 0, canvas.width, canvas.height);
 
 			const layout = buildRecursiveWallpaperLayout(
-				galleryImages,
+				getEnabledGalleryImages(),
 				canvas.width,
 				canvas.height,
 				options
@@ -2575,6 +2753,11 @@
 		async function generateMosaicBackground() {
 			if (galleryImages.length === 0) {
 				showGalleryToast("Choose a folder with images first.");
+				return;
+			}
+
+			if (getEnabledGalleryImages().length === 0) {
+				showGalleryToast("Enable at least one image before generating.");
 				return;
 			}
 
@@ -2768,7 +2951,7 @@
 		);
 
 		galleryViewport.addEventListener("pointerdown", event => {
-			if (event.button !== 0) {
+			if (event.button !== 0 || event.shiftKey || event.ctrlKey) {
 				return;
 			}
 
@@ -3320,8 +3503,12 @@
 		let sessionGenerationHistory = [];
 		let sessionFavorites = [];
 		const recentlyUsedPhotos = new Set();
-		const preferredPhotos = new Set();
-		const excludedPhotos = new Set();
+		const preferredPhotos = new Set(
+			galleryImages.filter(photo => photo.favorite)
+		);
+		const excludedPhotos = new Set(
+			galleryImages.filter(photo => photo.disabled)
+		);
 
 		function updateAdvancedSettingsState() {
 			advancedElements.body.classList.toggle(
@@ -4059,60 +4246,6 @@
 			);
 		}
 
-		galleryGrid.addEventListener("contextmenu", event => {
-			const item = event.target.closest(".gallery-item");
-
-			if (!item) {
-				return;
-			}
-
-			event.preventDefault();
-			const photo = galleryImages.find(candidate => candidate.element === item);
-
-			if (!photo) {
-				return;
-			}
-
-			if (excludedPhotos.has(photo)) {
-				excludedPhotos.delete(photo);
-				showGalleryToast("Photo included again.");
-			} else {
-				excludedPhotos.add(photo);
-				preferredPhotos.delete(photo);
-				showGalleryToast("Photo excluded from wallpaper generation.");
-			}
-
-			refreshPhotoState(photo);
-		});
-
-		galleryGrid.addEventListener("click", event => {
-			if (!event.shiftKey) {
-				return;
-			}
-
-			const item = event.target.closest(".gallery-item");
-
-			if (!item) {
-				return;
-			}
-
-			const photo = galleryImages.find(candidate => candidate.element === item);
-
-			if (!photo || excludedPhotos.has(photo)) {
-				return;
-			}
-
-			if (preferredPhotos.has(photo)) {
-				preferredPhotos.delete(photo);
-				showGalleryToast("Photo preference removed.");
-			} else {
-				preferredPhotos.add(photo);
-				showGalleryToast("Photo preferred for wallpaper generation.");
-			}
-
-			refreshPhotoState(photo);
-		});
-
 		updateAdvancedSettingsState();
 	</script>
 
@@ -4449,62 +4582,15 @@
 		});
 
 		function ensurePhotoStateButtons(photo) {
-			if (!photo.element || photo.element.querySelector(".photo-state-actions")) {
+			if (!photo.element) {
 				return;
 			}
 
-			const actions = document.createElement("div");
-			actions.className = "photo-state-actions";
+			const existingActions = photo.element.querySelector(".photo-state-actions");
 
-			const preferButton = document.createElement("button");
-			preferButton.type = "button";
-			preferButton.className = "photo-state-button";
-			preferButton.title = "Prefer this photo";
-			preferButton.textContent = "★";
-
-			const excludeButton = document.createElement("button");
-			excludeButton.type = "button";
-			excludeButton.className = "photo-state-button";
-			excludeButton.title = "Exclude this photo";
-			excludeButton.textContent = "×";
-
-			preferButton.addEventListener("click", event => {
-				event.preventDefault();
-				event.stopPropagation();
-
-				if (excludedPhotos.has(photo)) {
-					excludedPhotos.delete(photo);
-				}
-
-				if (preferredPhotos.has(photo)) {
-					preferredPhotos.delete(photo);
-					showGalleryToast("Photo preference removed.");
-				} else {
-					preferredPhotos.add(photo);
-					showGalleryToast("Photo preferred.");
-				}
-
-				refreshPhotoState(photo);
-			});
-
-			excludeButton.addEventListener("click", event => {
-				event.preventDefault();
-				event.stopPropagation();
-
-				if (excludedPhotos.has(photo)) {
-					excludedPhotos.delete(photo);
-					showGalleryToast("Photo included again.");
-				} else {
-					excludedPhotos.add(photo);
-					preferredPhotos.delete(photo);
-					showGalleryToast("Photo excluded.");
-				}
-
-				refreshPhotoState(photo);
-			});
-
-			actions.append(preferButton, excludeButton);
-			photo.element.appendChild(actions);
+			if (existingActions) {
+				existingActions.remove();
+			}
 		}
 
 		function refreshAllPhotoStateButtons() {
@@ -4513,42 +4599,6 @@
 			}
 		}
 
-		/*
-			Capture phase makes Shift-click work before the gallery's normal
-			click/preview behavior can consume the event.
-		*/
-		galleryGrid.addEventListener("click", event => {
-			if (!event.shiftKey) {
-				return;
-			}
-
-			const item = event.target.closest(".gallery-item");
-
-			if (!item || event.target.closest(".photo-state-actions")) {
-				return;
-			}
-
-			const photo = galleryImages.find(
-				candidate => candidate.element === item
-			);
-
-			if (!photo || excludedPhotos.has(photo)) {
-				return;
-			}
-
-			event.preventDefault();
-			event.stopImmediatePropagation();
-
-			if (preferredPhotos.has(photo)) {
-				preferredPhotos.delete(photo);
-				showGalleryToast("Photo preference removed.");
-			} else {
-				preferredPhotos.add(photo);
-				showGalleryToast("Photo preferred.");
-			}
-
-			refreshPhotoState(photo);
-		}, true);
 
 		const photoButtonObserver = new MutationObserver(() => {
 			refreshAllPhotoStateButtons();
@@ -4565,3 +4615,9 @@
 
 </body>
 </html>
+<style>
+	.photo-state-actions,
+	.photo-state-button {
+		display: none !important;
+	}
+</style>
