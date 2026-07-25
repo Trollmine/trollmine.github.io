@@ -1229,6 +1229,265 @@
 			}
 		}
 	</style>
+<style>
+		.gallery-item.selected {
+			box-shadow: 0 0 0 4px #111111, 0 0 0 7px #ffffff;
+			z-index: 5;
+		}
+
+		.gallery-item.tag-hidden {
+			display: none !important;
+		}
+
+		.gallery-viewport.space-pan {
+			cursor: grab;
+		}
+
+		.gallery-viewport.space-pan.dragging {
+			cursor: grabbing;
+		}
+
+		.drop-overlay {
+			position: fixed;
+			inset: 0;
+			display: grid;
+			place-items: center;
+			padding: 24px;
+			background: rgba(88, 214, 255, 0.2);
+			backdrop-filter: blur(8px);
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 160ms ease;
+			z-index: 5000;
+		}
+
+		.drop-overlay.visible {
+			opacity: 1;
+		}
+
+		.drop-overlay-card {
+			display: grid;
+			gap: 8px;
+			min-width: min(480px, 90vw);
+			padding: 34px;
+			border: 3px dashed #111111;
+			border-radius: 22px;
+			background: #ffffff;
+			text-align: center;
+			box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+		}
+
+		.drop-overlay-card strong {
+			font-size: 1.45rem;
+		}
+
+		.drop-overlay-card span {
+			opacity: 0.65;
+		}
+
+		.feature-overlay {
+			position: fixed;
+			inset: 0;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			padding: 24px;
+			background: rgba(0, 0, 0, 0.48);
+			backdrop-filter: blur(8px);
+			z-index: 4800;
+		}
+
+		.feature-overlay.visible {
+			display: flex;
+		}
+
+		.feature-card {
+			width: min(720px, 94vw);
+			max-height: 88vh;
+			overflow: auto;
+			padding: 22px;
+			border: 2px solid #111111;
+			border-radius: 18px;
+			background: #ffffff;
+			box-shadow: 0 28px 80px rgba(0, 0, 0, 0.3);
+		}
+
+		.similar-card {
+			width: min(980px, 94vw);
+		}
+
+		.feature-header,
+		.feature-section-heading {
+			display: flex;
+			align-items: flex-start;
+			justify-content: space-between;
+			gap: 16px;
+		}
+
+		.feature-header h2,
+		.feature-section h3 {
+			margin: 0;
+		}
+
+		.feature-header p {
+			margin: 5px 0 0;
+			opacity: 0.62;
+			word-break: break-word;
+		}
+
+		.feature-close {
+			width: 38px;
+			height: 38px;
+			flex: 0 0 auto;
+			border: 0;
+			border-radius: 50%;
+			background: #eeeeee;
+			font-size: 1.55rem;
+			cursor: pointer;
+		}
+
+		.feature-section {
+			margin-top: 22px;
+			padding-top: 20px;
+			border-top: 1px solid #dddddd;
+		}
+
+		.tag-input-row {
+			display: grid;
+			grid-template-columns: 1fr auto;
+			gap: 9px;
+			margin-top: 12px;
+		}
+
+		.tag-input-row input,
+		.tag-input-row button,
+		.small-feature-button {
+			min-height: 40px;
+			padding: 0 13px;
+			border: 1px solid #bbbbbb;
+			border-radius: 10px;
+			background: #ffffff;
+			font: inherit;
+		}
+
+		.tag-input-row button,
+		.small-feature-button {
+			cursor: pointer;
+			font-weight: 700;
+		}
+
+		.tag-list {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			margin-top: 13px;
+		}
+
+		.tag-chip {
+			display: inline-flex;
+			align-items: center;
+			gap: 7px;
+			min-height: 34px;
+			padding: 5px 10px;
+			border: 1px solid #c8c8c8;
+			border-radius: 999px;
+			background: #f5f5f5;
+			font-size: 0.9rem;
+			cursor: pointer;
+		}
+
+		.tag-chip.active {
+			border-color: #111111;
+			background: #111111;
+			color: #ffffff;
+		}
+
+		.tag-chip-remove {
+			font-weight: 900;
+			opacity: 0.62;
+		}
+
+		.statistics-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 12px;
+			margin-top: 22px;
+		}
+
+		.statistic-card {
+			padding: 16px;
+			border: 1px solid #d3d3d3;
+			border-radius: 13px;
+			background: #fafafa;
+		}
+
+		.statistic-label {
+			display: block;
+			margin-bottom: 5px;
+			opacity: 0.58;
+			font-size: 0.82rem;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		.statistic-value {
+			display: block;
+			font-size: 1.13rem;
+			font-weight: 800;
+			overflow-wrap: anywhere;
+		}
+
+		.similar-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+			gap: 12px;
+			margin-top: 22px;
+		}
+
+		.similar-result {
+			display: grid;
+			grid-template-rows: 130px auto;
+			overflow: hidden;
+			padding: 0;
+			border: 1px solid #cccccc;
+			border-radius: 12px;
+			background: #ffffff;
+			cursor: pointer;
+			text-align: left;
+		}
+
+		.similar-result img,
+		.similar-result video {
+			width: 100%;
+			height: 130px;
+			object-fit: cover;
+			background: #111111;
+		}
+
+		.similar-result-info {
+			display: grid;
+			gap: 4px;
+			padding: 10px;
+		}
+
+		.similar-result-name {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			font-weight: 750;
+		}
+
+		.similar-result-score {
+			opacity: 0.58;
+			font-size: 0.82rem;
+		}
+
+		@media (max-width: 620px) {
+			.statistics-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+</style>
 </head>
 
 <body>
@@ -1374,6 +1633,9 @@
 			<div class="gallery-info" id="zoomDisplay">100%</div>
 			<button class="gallery-control" id="zoomInButton" type="button" title="Zoom in">+</button>
 			<button class="gallery-control" id="resetGalleryButton" type="button">Reset</button>
+			<button class="gallery-control" id="tagsButton" type="button" title="Edit tags and filter the gallery">Tags</button>
+			<button class="gallery-control" id="similarButton" type="button" title="Find media similar to the selected item">Similar</button>
+			<button class="gallery-control" id="statisticsButton" type="button" title="View folder statistics">Statistics</button>
 			<button
 				class="gallery-control"
 				id="openGeneratorSettingsButton"
@@ -1558,6 +1820,69 @@
 					Choose a folder containing images and videos. They stay on your device
 					and are not uploaded anywhere.
 				</p>
+			</div>
+		</div>
+
+
+		<div class="drop-overlay" id="dropOverlay" aria-hidden="true">
+			<div class="drop-overlay-card">
+				<strong>Drop to load your gallery</strong>
+				<span>Folders, images and videos are supported</span>
+			</div>
+		</div>
+
+		<div class="feature-overlay" id="tagsOverlay" aria-hidden="true">
+			<div class="feature-card tags-card" role="dialog" aria-modal="true">
+				<div class="feature-header">
+					<div>
+						<h2>Tags</h2>
+						<p id="tagsSelectedName">Select a media item first.</p>
+					</div>
+					<button class="feature-close" data-close-overlay="tagsOverlay" type="button">×</button>
+				</div>
+
+				<div class="feature-section">
+					<h3>Selected media</h3>
+					<div class="tag-input-row">
+						<input id="tagInput" type="text" placeholder="Type a tag and press Enter" autocomplete="off">
+						<button id="addTagButton" type="button">Add</button>
+					</div>
+					<div class="tag-list" id="selectedTagList"></div>
+				</div>
+
+				<div class="feature-section">
+					<div class="feature-section-heading">
+						<h3>Filter gallery</h3>
+						<button class="small-feature-button" id="clearTagFilterButton" type="button">Show all</button>
+					</div>
+					<div class="tag-list" id="tagFilterList"></div>
+				</div>
+			</div>
+		</div>
+
+		<div class="feature-overlay" id="statisticsOverlay" aria-hidden="true">
+			<div class="feature-card statistics-card" role="dialog" aria-modal="true">
+				<div class="feature-header">
+					<div>
+						<h2>Gallery statistics</h2>
+						<p>Information calculated from the currently loaded folder.</p>
+					</div>
+					<button class="feature-close" data-close-overlay="statisticsOverlay" type="button">×</button>
+				</div>
+				<div class="statistics-grid" id="statisticsGrid"></div>
+			</div>
+		</div>
+
+		<div class="feature-overlay" id="similarOverlay" aria-hidden="true">
+			<div class="feature-card similar-card" role="dialog" aria-modal="true">
+				<div class="feature-header">
+					<div>
+						<h2>Similar media</h2>
+						<p id="similarDescription">Select an image or video to search.</p>
+					</div>
+					<button class="feature-close" data-close-overlay="similarOverlay" type="button">×</button>
+				</div>
+				<div class="similar-grid" id="similarGrid"></div>
 			</div>
 		</div>
 
@@ -2264,65 +2589,8 @@
 		}
 
 		folderInput.addEventListener("change", async () => {
-			for (const media of galleryImages) {
-				if (media.objectUrl) {
-					URL.revokeObjectURL(media.objectUrl);
-				}
-			}
-
-			galleryGrid.replaceChildren();
-			galleryImages = [];
-
-			const imageFiles = Array.from(folderInput.files)
-				.filter(isMediaFile)
-				.sort((firstFile, secondFile) =>
-					firstFile.name.localeCompare(secondFile.name, undefined, {
-						numeric: true,
-						sensitivity: "base"
-					})
-				);
-
-			if (imageFiles.length === 0) {
-				galleryEmpty.style.display = "block";
-				resetGalleryView();
-				return;
-			}
-
-			galleryEmpty.style.display = "block";
-			galleryEmpty.querySelector("h2").textContent = "Loading gallery…";
-			galleryEmpty.querySelector("p").textContent =
-				`Reading ${imageFiles.length} media item${imageFiles.length === 1 ? "" : "s"} from your folder.`;
-
-			const loaded = await Promise.allSettled(
-				imageFiles.map(loadGalleryImage)
-			);
-
-			galleryImages = loaded
-				.filter(result => result.status === "fulfilled")
-				.map(result => result.value);
-
-			if (galleryImages.length === 0) {
-				galleryEmpty.querySelector("h2").textContent =
-					"No readable media found";
-				galleryEmpty.querySelector("p").textContent =
-					"Try JPG, PNG, WebP, MP4, WebM or another browser-supported media format.";
-				resetGalleryView();
-				return;
-			}
-
-			const fragment = document.createDocumentFragment();
-
-			for (const photo of galleryImages) {
-				fragment.appendChild(createGalleryElement(photo));
-			}
-
-			galleryGrid.appendChild(fragment);
-			galleryEmpty.style.display = "none";
-
-			requestAnimationFrame(() => {
-				layoutMosaic();
-				resetGalleryView();
-			});
+			await loadMediaFiles(Array.from(folderInput.files), false);
+			folderInput.value = "";
 		});
 
 		function setGalleryZoom(newScale, originX, originY) {
@@ -5121,6 +5389,825 @@
 			childList: true,
 			subtree: false
 		});
+
+
+		// Gallery organization, drag and drop, statistics and similarity tools
+
+		const tagsButton = document.getElementById("tagsButton");
+		const similarButton = document.getElementById("similarButton");
+		const statisticsButton = document.getElementById("statisticsButton");
+		const dropOverlay = document.getElementById("dropOverlay");
+		const tagsOverlay = document.getElementById("tagsOverlay");
+		const statisticsOverlay = document.getElementById("statisticsOverlay");
+		const similarOverlay = document.getElementById("similarOverlay");
+		const tagsSelectedName = document.getElementById("tagsSelectedName");
+		const selectedTagList = document.getElementById("selectedTagList");
+		const tagFilterList = document.getElementById("tagFilterList");
+		const tagInput = document.getElementById("tagInput");
+		const addTagButton = document.getElementById("addTagButton");
+		const clearTagFilterButton = document.getElementById("clearTagFilterButton");
+		const statisticsGrid = document.getElementById("statisticsGrid");
+		const similarGrid = document.getElementById("similarGrid");
+		const similarDescription = document.getElementById("similarDescription");
+
+		const MEDIA_TAGS_KEY = "trollmineMediaTags";
+		let selectedGalleryMedia = null;
+		let activeTagFilter = "";
+		let dragDepth = 0;
+		let spacePanHeld = false;
+		let inertiaFrame = 0;
+		let panVelocityX = 0;
+		let panVelocityY = 0;
+		let lastPanTime = 0;
+		let originalCreateGalleryElement = createGalleryElement;
+
+		function readStoredTags() {
+			try {
+				const stored = JSON.parse(localStorage.getItem(MEDIA_TAGS_KEY) || "{}");
+				return stored && typeof stored === "object" ? stored : {};
+			} catch {
+				return {};
+			}
+		}
+
+		const mediaTags = readStoredTags();
+
+		function saveMediaTags() {
+			localStorage.setItem(MEDIA_TAGS_KEY, JSON.stringify(mediaTags));
+		}
+
+		function getPhotoTags(photo) {
+			const path = getMediaPath(photo);
+			const tags = mediaTags[path];
+			return Array.isArray(tags) ? tags : [];
+		}
+
+		function setPhotoTags(photo, tags) {
+			const path = getMediaPath(photo);
+			const normalized = [...new Set(tags.map(tag => tag.trim()).filter(Boolean))]
+				.sort((first, second) => first.localeCompare(second));
+
+			if (normalized.length === 0) {
+				delete mediaTags[path];
+			} else {
+				mediaTags[path] = normalized;
+			}
+
+			saveMediaTags();
+		}
+
+		function openFeatureOverlay(overlay) {
+			overlay.classList.add("visible");
+			overlay.setAttribute("aria-hidden", "false");
+		}
+
+		function closeFeatureOverlay(overlay) {
+			overlay.classList.remove("visible");
+			overlay.setAttribute("aria-hidden", "true");
+		}
+
+		for (const closeButton of document.querySelectorAll("[data-close-overlay]")) {
+			closeButton.addEventListener("click", () => {
+				const overlay = document.getElementById(closeButton.dataset.closeOverlay);
+				closeFeatureOverlay(overlay);
+			});
+		}
+
+		for (const overlay of [tagsOverlay, statisticsOverlay, similarOverlay]) {
+			overlay.addEventListener("click", event => {
+				if (event.target === overlay) {
+					closeFeatureOverlay(overlay);
+				}
+			});
+		}
+
+		function selectGalleryMedia(photo) {
+			if (selectedGalleryMedia?.element) {
+				selectedGalleryMedia.element.classList.remove("selected");
+			}
+
+			selectedGalleryMedia = photo;
+
+			if (photo?.element) {
+				photo.element.classList.add("selected");
+			}
+		}
+
+		function focusGalleryMedia(photo, targetScale = Math.max(galleryScale, 1.5)) {
+			if (!photo?.element) {
+				return;
+			}
+
+			const itemLeft = photo.element.offsetLeft;
+			const itemTop = photo.element.offsetTop;
+			const itemWidth = photo.element.offsetWidth;
+			const itemHeight = photo.element.offsetHeight;
+			const viewportWidth = galleryViewport.clientWidth;
+			const viewportHeight = galleryViewport.clientHeight;
+			const fitScale = Math.min(
+				maximumZoom,
+				Math.max(
+					minimumZoom,
+					Math.min(
+						(viewportWidth * 0.78) / Math.max(1, itemWidth),
+						(viewportHeight * 0.78) / Math.max(1, itemHeight)
+					)
+				)
+			);
+
+			galleryScale = Math.min(maximumZoom, Math.max(targetScale, fitScale));
+			galleryX = viewportWidth / 2 - (itemLeft + itemWidth / 2) * galleryScale;
+			galleryY = viewportHeight / 2 - (itemTop + itemHeight / 2) * galleryScale;
+			applyGalleryTransform();
+			selectGalleryMedia(photo);
+		}
+
+		createGalleryElement = function(photo) {
+			const element = originalCreateGalleryElement(photo);
+
+			element.addEventListener("click", event => {
+				if (!event.shiftKey && !event.ctrlKey) {
+					selectGalleryMedia(photo);
+				}
+			});
+
+			element.addEventListener("dblclick", event => {
+				event.preventDefault();
+				event.stopPropagation();
+				focusGalleryMedia(photo, 1.65);
+			});
+
+			return element;
+		};
+
+		function applyTagFilter() {
+			for (const photo of galleryImages) {
+				const visible = !activeTagFilter || getPhotoTags(photo).includes(activeTagFilter);
+				photo.element?.classList.toggle("tag-hidden", !visible);
+			}
+
+			layoutVisibleMosaic();
+		}
+
+		function layoutVisibleMosaic() {
+			const visiblePhotos = galleryImages.filter(photo => !photo.element?.classList.contains("tag-hidden"));
+
+			if (visiblePhotos.length === 0) {
+				galleryGrid.style.height = "0px";
+				return;
+			}
+
+			const availableWidth = Math.max(320, galleryWorld.clientWidth - 16);
+			const targetRowHeight = Math.max(150, Math.min(290, availableWidth / 5.2));
+			let currentRow = [];
+			let currentRatioTotal = 0;
+			let top = 0;
+
+			function placeVisibleRow(row, ratioTotal, isLastRow) {
+				if (row.length === 0) {
+					return;
+				}
+
+				const totalGaps = mosaicGap * (row.length - 1);
+				const usableWidth = availableWidth - totalGaps;
+				let rowHeight = usableWidth / ratioTotal;
+
+				if (isLastRow) {
+					rowHeight = Math.min(rowHeight, targetRowHeight);
+				}
+
+				let left = 0;
+
+				for (const photo of row) {
+					const width = rowHeight * photo.ratio;
+					photo.element.style.left = `${left}px`;
+					photo.element.style.top = `${top}px`;
+					photo.element.style.width = `${width}px`;
+					photo.element.style.height = `${rowHeight}px`;
+					left += width + mosaicGap;
+				}
+
+				top += rowHeight + mosaicGap;
+			}
+
+			for (const photo of visiblePhotos) {
+				currentRow.push(photo);
+				currentRatioTotal += photo.ratio;
+
+				if (currentRatioTotal * targetRowHeight + mosaicGap * (currentRow.length - 1) >= availableWidth) {
+					placeVisibleRow(currentRow, currentRatioTotal, false);
+					currentRow = [];
+					currentRatioTotal = 0;
+				}
+			}
+
+			placeVisibleRow(currentRow, currentRatioTotal, true);
+			galleryGrid.style.height = `${Math.max(0, top - mosaicGap)}px`;
+		}
+
+		function getAllTags() {
+			return [...new Set(galleryImages.flatMap(getPhotoTags))]
+				.sort((first, second) => first.localeCompare(second));
+		}
+
+		function renderTagsPanel() {
+			selectedTagList.replaceChildren();
+			tagFilterList.replaceChildren();
+
+			if (selectedGalleryMedia) {
+				tagsSelectedName.textContent = getMediaPath(selectedGalleryMedia);
+				tagInput.disabled = false;
+				addTagButton.disabled = false;
+
+				const tags = getPhotoTags(selectedGalleryMedia);
+
+				if (tags.length === 0) {
+					const empty = document.createElement("span");
+					empty.textContent = "No tags yet.";
+					empty.style.opacity = "0.6";
+					selectedTagList.appendChild(empty);
+				}
+
+				for (const tag of tags) {
+					const chip = document.createElement("button");
+					chip.type = "button";
+					chip.className = "tag-chip";
+					chip.innerHTML = `<span>${escapeFeatureText(tag)}</span><span class="tag-chip-remove">×</span>`;
+					chip.title = "Remove tag";
+					chip.addEventListener("click", () => {
+						setPhotoTags(selectedGalleryMedia, tags.filter(existing => existing !== tag));
+
+						if (activeTagFilter === tag && !getAllTags().includes(tag)) {
+							activeTagFilter = "";
+						}
+
+						renderTagsPanel();
+						applyTagFilter();
+					});
+					selectedTagList.appendChild(chip);
+				}
+			} else {
+				tagsSelectedName.textContent = "Select a media item first.";
+				tagInput.disabled = true;
+				addTagButton.disabled = true;
+			}
+
+			const allTags = getAllTags();
+
+			if (allTags.length === 0) {
+				const empty = document.createElement("span");
+				empty.textContent = "No gallery tags yet.";
+				empty.style.opacity = "0.6";
+				tagFilterList.appendChild(empty);
+			}
+
+			for (const tag of allTags) {
+				const count = galleryImages.filter(photo => getPhotoTags(photo).includes(tag)).length;
+				const chip = document.createElement("button");
+				chip.type = "button";
+				chip.className = `tag-chip${activeTagFilter === tag ? " active" : ""}`;
+				chip.textContent = `${tag} · ${count}`;
+				chip.addEventListener("click", () => {
+					activeTagFilter = activeTagFilter === tag ? "" : tag;
+					renderTagsPanel();
+					applyTagFilter();
+				});
+				tagFilterList.appendChild(chip);
+			}
+		}
+
+		function escapeFeatureText(value) {
+			const element = document.createElement("span");
+			element.textContent = value;
+			return element.innerHTML;
+		}
+
+		function addCurrentTag() {
+			if (!selectedGalleryMedia) {
+				showGalleryToast("Select a media item first.");
+				return;
+			}
+
+			const tag = tagInput.value.trim();
+
+			if (!tag) {
+				return;
+			}
+
+			setPhotoTags(selectedGalleryMedia, [...getPhotoTags(selectedGalleryMedia), tag]);
+			tagInput.value = "";
+			renderTagsPanel();
+			applyTagFilter();
+		}
+
+		tagsButton.addEventListener("click", () => {
+			renderTagsPanel();
+			openFeatureOverlay(tagsOverlay);
+		});
+
+		addTagButton.addEventListener("click", addCurrentTag);
+		tagInput.addEventListener("keydown", event => {
+			if (event.key === "Enter") {
+				event.preventDefault();
+				addCurrentTag();
+			}
+		});
+
+		clearTagFilterButton.addEventListener("click", () => {
+			activeTagFilter = "";
+			renderTagsPanel();
+			applyTagFilter();
+		});
+
+		function formatFileSize(bytes) {
+			if (!Number.isFinite(bytes) || bytes <= 0) {
+				return "0 B";
+			}
+
+			const units = ["B", "KB", "MB", "GB", "TB"];
+			const index = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+			return `${(bytes / 1024 ** index).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+		}
+
+		function formatDuration(seconds) {
+			if (!Number.isFinite(seconds) || seconds <= 0) {
+				return "—";
+			}
+
+			const totalSeconds = Math.round(seconds);
+			const hours = Math.floor(totalSeconds / 3600);
+			const minutes = Math.floor((totalSeconds % 3600) / 60);
+			const remainingSeconds = totalSeconds % 60;
+
+			if (hours > 0) {
+				return `${hours}h ${minutes}m ${remainingSeconds}s`;
+			}
+
+			return `${minutes}m ${remainingSeconds}s`;
+		}
+
+		function addStatistic(label, value) {
+			const card = document.createElement("div");
+			card.className = "statistic-card";
+			const labelElement = document.createElement("span");
+			labelElement.className = "statistic-label";
+			labelElement.textContent = label;
+			const valueElement = document.createElement("span");
+			valueElement.className = "statistic-value";
+			valueElement.textContent = value;
+			card.append(labelElement, valueElement);
+			statisticsGrid.appendChild(card);
+		}
+
+		function showStatistics() {
+			statisticsGrid.replaceChildren();
+
+			const images = galleryImages.filter(photo => photo.type !== "video");
+			const videos = galleryImages.filter(photo => photo.type === "video");
+			const folders = new Set();
+
+			for (const photo of galleryImages) {
+				const path = getMediaPath(photo);
+				const parts = path.split("/");
+
+				for (let index = 1; index < parts.length; index++) {
+					folders.add(parts.slice(0, index).join("/"));
+				}
+			}
+
+			const totalSize = galleryImages.reduce((sum, photo) => sum + (photo.file.size || 0), 0);
+			const averageWidth = galleryImages.length
+				? Math.round(galleryImages.reduce((sum, photo) => sum + photo.width, 0) / galleryImages.length)
+				: 0;
+			const averageHeight = galleryImages.length
+				? Math.round(galleryImages.reduce((sum, photo) => sum + photo.height, 0) / galleryImages.length)
+				: 0;
+			const largest = [...galleryImages].sort(
+				(first, second) => second.width * second.height - first.width * first.height
+			)[0];
+			const longest = [...videos].sort((first, second) => second.duration - first.duration)[0];
+			const portraitCount = galleryImages.filter(photo => photo.height > photo.width).length;
+			const landscapeCount = galleryImages.filter(photo => photo.width >= photo.height).length;
+			const averageVideoDuration = videos.length
+				? videos.reduce((sum, video) => sum + video.duration, 0) / videos.length
+				: 0;
+
+			addStatistic("Images", images.length.toLocaleString());
+			addStatistic("Videos", videos.length.toLocaleString());
+			addStatistic("Folders", folders.size.toLocaleString());
+			addStatistic("Total size", formatFileSize(totalSize));
+			addStatistic("Average resolution", galleryImages.length ? `${averageWidth} × ${averageHeight}` : "—");
+			addStatistic("Largest media", largest ? `${largest.width} × ${largest.height} · ${largest.file.name}` : "—");
+			addStatistic("Longest video", longest ? `${formatDuration(longest.duration)} · ${longest.file.name}` : "—");
+			addStatistic("Average video length", videos.length ? formatDuration(averageVideoDuration) : "—");
+			addStatistic("Landscape / portrait", `${landscapeCount} / ${portraitCount}`);
+			addStatistic("Favorites", galleryImages.filter(photo => photo.favorite).length.toLocaleString());
+			addStatistic("Disabled", galleryImages.filter(photo => photo.disabled).length.toLocaleString());
+			addStatistic("Tags", getAllTags().length.toLocaleString());
+
+			openFeatureOverlay(statisticsOverlay);
+		}
+
+		statisticsButton.addEventListener("click", showStatistics);
+
+		async function getMediaFingerprint(photo) {
+			if (photo.fingerprint) {
+				return photo.fingerprint;
+			}
+
+			const canvas = document.createElement("canvas");
+			canvas.width = 9;
+			canvas.height = 8;
+			const context = canvas.getContext("2d", { willReadFrequently: true });
+			let media;
+
+			try {
+				media = photo.type === "video"
+					? await loadCanvasVideo(photo.src)
+					: await loadCanvasImage(photo.src);
+
+				context.drawImage(media, 0, 0, 9, 8);
+				const pixels = context.getImageData(0, 0, 9, 8).data;
+				const grayscale = [];
+				let red = 0;
+				let green = 0;
+				let blue = 0;
+
+				for (let index = 0; index < pixels.length; index += 4) {
+					const r = pixels[index];
+					const g = pixels[index + 1];
+					const b = pixels[index + 2];
+					grayscale.push(Math.round(r * 0.299 + g * 0.587 + b * 0.114));
+					red += r;
+					green += g;
+					blue += b;
+				}
+
+				let hash = "";
+
+				for (let y = 0; y < 8; y++) {
+					for (let x = 0; x < 8; x++) {
+						hash += grayscale[y * 9 + x] > grayscale[y * 9 + x + 1] ? "1" : "0";
+					}
+				}
+
+				const count = pixels.length / 4;
+				photo.fingerprint = {
+					hash,
+					color: [red / count, green / count, blue / count],
+					ratio: photo.ratio
+				};
+
+				return photo.fingerprint;
+			} finally {
+				if (photo.type === "video" && media) {
+					media.pause();
+					media.removeAttribute("src");
+					media.load();
+				}
+			}
+		}
+
+		function hammingDistance(first, second) {
+			let distance = 0;
+
+			for (let index = 0; index < Math.min(first.length, second.length); index++) {
+				if (first[index] !== second[index]) {
+					distance++;
+				}
+			}
+
+			return distance;
+		}
+
+		function fingerprintSimilarity(first, second) {
+			const hashScore = 1 - hammingDistance(first.hash, second.hash) / 64;
+			const colorDistance = Math.sqrt(
+				(first.color[0] - second.color[0]) ** 2 +
+				(first.color[1] - second.color[1]) ** 2 +
+				(first.color[2] - second.color[2]) ** 2
+			) / 441.67;
+			const colorScore = 1 - Math.min(1, colorDistance);
+			const ratioScore = 1 - Math.min(1, Math.abs(Math.log(first.ratio / second.ratio)) / 1.5);
+			return hashScore * 0.62 + colorScore * 0.23 + ratioScore * 0.15;
+		}
+
+		async function showSimilarMedia() {
+			if (!selectedGalleryMedia) {
+				showGalleryToast("Select a media item first.");
+				return;
+			}
+
+			openFeatureOverlay(similarOverlay);
+			similarGrid.replaceChildren();
+			similarDescription.textContent = `Analyzing media similar to ${getMediaPath(selectedGalleryMedia)}…`;
+
+			try {
+				const selectedFingerprint = await getMediaFingerprint(selectedGalleryMedia);
+				const candidates = galleryImages.filter(photo => photo !== selectedGalleryMedia);
+				const results = [];
+
+				for (let index = 0; index < candidates.length; index += 8) {
+					const batch = candidates.slice(index, index + 8);
+					const fingerprints = await Promise.all(batch.map(getMediaFingerprint));
+
+					for (let batchIndex = 0; batchIndex < batch.length; batchIndex++) {
+						results.push({
+							photo: batch[batchIndex],
+							score: fingerprintSimilarity(selectedFingerprint, fingerprints[batchIndex])
+						});
+					}
+
+					await new Promise(resolve => requestAnimationFrame(resolve));
+				}
+
+				results.sort((first, second) => second.score - first.score);
+				const shownResults = results.slice(0, 24);
+				similarDescription.textContent = `Closest visual matches for ${getMediaPath(selectedGalleryMedia)}.`;
+
+				for (const result of shownResults) {
+					const button = document.createElement("button");
+					button.type = "button";
+					button.className = "similar-result";
+					const media = result.photo.type === "video"
+						? document.createElement("video")
+						: document.createElement("img");
+
+					media.src = result.photo.src;
+
+					if (result.photo.type === "video") {
+						media.muted = true;
+						media.playsInline = true;
+						media.preload = "metadata";
+					} else {
+						media.alt = result.photo.file.name;
+					}
+
+					const information = document.createElement("span");
+					information.className = "similar-result-info";
+					const name = document.createElement("span");
+					name.className = "similar-result-name";
+					name.textContent = result.photo.file.name;
+					const score = document.createElement("span");
+					score.className = "similar-result-score";
+					score.textContent = `${Math.round(result.score * 100)}% similar`;
+					information.append(name, score);
+					button.append(media, information);
+
+					button.addEventListener("click", () => {
+						activeTagFilter = "";
+						applyTagFilter();
+						closeFeatureOverlay(similarOverlay);
+						focusGalleryMedia(result.photo, 1.65);
+					});
+
+					similarGrid.appendChild(button);
+				}
+			} catch (error) {
+				console.error(error);
+				similarDescription.textContent = "The similarity scan could not be completed.";
+				showGalleryToast("Could not analyze similar media.");
+			}
+		}
+
+		similarButton.addEventListener("click", showSimilarMedia);
+
+		async function readDroppedEntry(entry, path = "") {
+			if (entry.isFile) {
+				return new Promise(resolve => {
+					entry.file(file => {
+						try {
+							Object.defineProperty(file, "webkitRelativePath", {
+								configurable: true,
+								value: `${path}${file.name}`
+							});
+						} catch {}
+
+						resolve([file]);
+					}, () => resolve([]));
+				});
+			}
+
+			if (!entry.isDirectory) {
+				return [];
+			}
+
+			const reader = entry.createReader();
+			const entries = [];
+
+			while (true) {
+				const batch = await new Promise(resolve => reader.readEntries(resolve, () => resolve([])));
+
+				if (batch.length === 0) {
+					break;
+				}
+
+				entries.push(...batch);
+			}
+
+			const nested = await Promise.all(
+				entries.map(child => readDroppedEntry(child, `${path}${entry.name}/`))
+			);
+
+			return nested.flat();
+		}
+
+		async function getDroppedFiles(dataTransfer) {
+			const items = [...(dataTransfer.items || [])];
+			const entries = items
+				.map(item => item.webkitGetAsEntry?.())
+				.filter(Boolean);
+
+			if (entries.length > 0) {
+				const groups = await Promise.all(entries.map(entry => readDroppedEntry(entry)));
+				return groups.flat();
+			}
+
+			return [...dataTransfer.files];
+		}
+
+		async function loadMediaFiles(files, append = false) {
+			const mediaFiles = files
+				.filter(isMediaFile)
+				.sort((first, second) => getDroppedFilePath(first).localeCompare(
+					getDroppedFilePath(second),
+					undefined,
+					{ numeric: true, sensitivity: "base" }
+				));
+
+			if (mediaFiles.length === 0) {
+				showGalleryToast("No supported images or videos were dropped.");
+				return;
+			}
+
+			if (!append) {
+				for (const media of galleryImages) {
+					if (media.objectUrl) {
+						URL.revokeObjectURL(media.objectUrl);
+					}
+				}
+
+				galleryGrid.replaceChildren();
+				galleryImages = [];
+				selectedGalleryMedia = null;
+				activeTagFilter = "";
+			}
+
+			galleryEmpty.style.display = "block";
+			galleryEmpty.querySelector("h2").textContent = "Loading gallery…";
+			galleryEmpty.querySelector("p").textContent =
+				`Reading ${mediaFiles.length} dropped media item${mediaFiles.length === 1 ? "" : "s"}.`;
+
+			const loaded = await Promise.allSettled(mediaFiles.map(loadGalleryImage));
+			const newMedia = loaded
+				.filter(result => result.status === "fulfilled")
+				.map(result => result.value);
+			const existingPaths = new Set(galleryImages.map(getMediaPath));
+
+			for (const photo of newMedia) {
+				if (!existingPaths.has(getMediaPath(photo))) {
+					galleryImages.push(photo);
+					galleryGrid.appendChild(createGalleryElement(photo));
+					existingPaths.add(getMediaPath(photo));
+				} else if (photo.objectUrl) {
+					URL.revokeObjectURL(photo.objectUrl);
+				}
+			}
+
+			galleryEmpty.style.display = galleryImages.length ? "none" : "block";
+
+			requestAnimationFrame(() => {
+				layoutVisibleMosaic();
+				resetGalleryView();
+			});
+
+			showGalleryToast(`${newMedia.length} media item${newMedia.length === 1 ? "" : "s"} loaded.`);
+		}
+
+		function getDroppedFilePath(file) {
+			return file.webkitRelativePath || file.name;
+		}
+
+		window.addEventListener("dragenter", event => {
+			if (![...(event.dataTransfer?.types || [])].includes("Files")) {
+				return;
+			}
+
+			event.preventDefault();
+			dragDepth++;
+			dropOverlay.classList.add("visible");
+			dropOverlay.setAttribute("aria-hidden", "false");
+		});
+
+		window.addEventListener("dragover", event => {
+			if ([...(event.dataTransfer?.types || [])].includes("Files")) {
+				event.preventDefault();
+				event.dataTransfer.dropEffect = "copy";
+			}
+		});
+
+		window.addEventListener("dragleave", event => {
+			event.preventDefault();
+			dragDepth = Math.max(0, dragDepth - 1);
+
+			if (dragDepth === 0) {
+				dropOverlay.classList.remove("visible");
+				dropOverlay.setAttribute("aria-hidden", "true");
+			}
+		});
+
+		window.addEventListener("drop", async event => {
+			event.preventDefault();
+			dragDepth = 0;
+			dropOverlay.classList.remove("visible");
+			dropOverlay.setAttribute("aria-hidden", "true");
+
+			const files = await getDroppedFiles(event.dataTransfer);
+			await loadMediaFiles(files, false);
+		});
+
+		galleryViewport.addEventListener("pointermove", event => {
+			if (!draggingGallery) {
+				return;
+			}
+
+			const now = performance.now();
+			const elapsed = Math.max(1, now - lastPanTime);
+			panVelocityX = (event.clientX - previousPointerX) / elapsed * 16;
+			panVelocityY = (event.clientY - previousPointerY) / elapsed * 16;
+			lastPanTime = now;
+		}, true);
+
+		galleryViewport.addEventListener("pointerdown", () => {
+			cancelAnimationFrame(inertiaFrame);
+			panVelocityX = 0;
+			panVelocityY = 0;
+			lastPanTime = performance.now();
+		}, true);
+
+		galleryViewport.addEventListener("pointerup", () => {
+			function animateInertia() {
+				panVelocityX *= 0.91;
+				panVelocityY *= 0.91;
+
+				if (Math.abs(panVelocityX) < 0.12 && Math.abs(panVelocityY) < 0.12) {
+					return;
+				}
+
+				galleryX += panVelocityX;
+				galleryY += panVelocityY;
+				applyGalleryTransform();
+				inertiaFrame = requestAnimationFrame(animateInertia);
+			}
+
+			inertiaFrame = requestAnimationFrame(animateInertia);
+		});
+
+		document.addEventListener("keydown", event => {
+			const inputFocused = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || "");
+
+			if (!galleryPage.classList.contains("active") || inputFocused) {
+				return;
+			}
+
+			if (event.code === "Space") {
+				event.preventDefault();
+				spacePanHeld = true;
+				galleryViewport.classList.add("space-pan");
+			}
+
+			if (event.key.toLowerCase() === "f" && selectedGalleryMedia) {
+				event.preventDefault();
+				focusGalleryMedia(selectedGalleryMedia, Math.max(1.4, galleryScale));
+			}
+
+			if (event.key.toLowerCase() === "t") {
+				event.preventDefault();
+				renderTagsPanel();
+				openFeatureOverlay(tagsOverlay);
+			}
+
+			if (event.key.toLowerCase() === "s" && selectedGalleryMedia) {
+				event.preventDefault();
+				showSimilarMedia();
+			}
+		});
+
+		document.addEventListener("keyup", event => {
+			if (event.code === "Space") {
+				spacePanHeld = false;
+				galleryViewport.classList.remove("space-pan");
+			}
+		});
+
+		document.addEventListener("keydown", event => {
+			if (event.key === "Escape") {
+				for (const overlay of [tagsOverlay, statisticsOverlay, similarOverlay]) {
+					closeFeatureOverlay(overlay);
+				}
+			}
+		});
+
 
 		refreshAllPhotoStateButtons();
 		persistGeneratorSettings();
