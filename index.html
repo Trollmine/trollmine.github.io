@@ -2209,216 +2209,241 @@
 			};
 		}
 
-		function createRowPartitions(itemCount, rowCount, minimum, maximum) {
-			const partitions = [];
-
-			function visit(remaining, rowsLeft, current) {
-				if (rowsLeft === 0) {
-					if (remaining === 0) {
-						partitions.push([...current]);
-					}
-
-					return;
-				}
-
-				for (let size = minimum; size <= maximum; size++) {
-					const nextRemaining = remaining - size;
-
-					if (
-						nextRemaining < (rowsLeft - 1) * minimum ||
-						nextRemaining > (rowsLeft - 1) * maximum
-					) {
-						continue;
-					}
-
-					current.push(size);
-					visit(nextRemaining, rowsLeft - 1, current);
-					current.pop();
-				}
+		function calculateGroupRatio(photos) {
+			if (photos.length === 0) {
+				return 1;
 			}
 
-			visit(itemCount, rowCount, []);
-			return partitions;
+			const totalRatio = photos.reduce(
+				(total, photo) => total + photo.ratio,
+				0
+			);
+
+			return Math.max(0.05, totalRatio / photos.length);
 		}
 
-		function evaluateLayout(
+		function splitPhotoGroup(photos, random) {
+			if (photos.length <= 1) {
+				return [photos, []];
+			}
+
+			const shuffled = seededShuffle(photos, random);
+			const middle = Math.max(
+				1,
+				Math.min(
+					shuffled.length - 1,
+					Math.round(
+						shuffled.length * (0.35 + random() * 0.3)
+					)
+				)
+			);
+
+			return [
+				shuffled.slice(0, middle),
+				shuffled.slice(middle)
+			];
+		}
+
+		function createRecursiveMosaic(
 			photos,
-			rowSizes,
-			usableWidth,
-			usableHeight,
-			horizontalGap
+			x,
+			y,
+			width,
+			height,
+			gap,
+			random,
+			leaves
 		) {
-			const rows = [];
-			let photoIndex = 0;
-			let imageHeightTotal = 0;
-			let balancePenalty = 0;
-			let previousHeight = null;
-
-			for (const rowSize of rowSizes) {
-				const rowPhotos = photos.slice(
-					photoIndex,
-					photoIndex + rowSize
-				);
-				photoIndex += rowSize;
-
-				const ratioTotal = rowPhotos.reduce(
-					(total, photo) => total + photo.ratio,
-					0
-				);
-
-				if (!Number.isFinite(ratioTotal) || ratioTotal <= 0) {
-					return null;
-				}
-
-				const height =
-					(
-						usableWidth -
-						horizontalGap * (rowSize - 1)
-					) /
-					ratioTotal;
-
-				if (!Number.isFinite(height) || height <= 0) {
-					return null;
-				}
-
-				if (previousHeight !== null) {
-					balancePenalty += Math.abs(height - previousHeight);
-				}
-
-				previousHeight = height;
-				imageHeightTotal += height;
-				rows.push({ photos: rowPhotos, height });
+			if (photos.length === 1) {
+				leaves.push({
+					photo: photos[0],
+					x,
+					y,
+					width,
+					height
+				});
+				return;
 			}
 
-			/*
-				The images must fit completely inside the canvas. Any remaining
-				height becomes evenly distributed vertical spacing, so the final
-				row can never be clipped.
-			*/
-			const verticalSpace = usableHeight - imageHeightTotal;
+			const [firstGroup, secondGroup] = splitPhotoGroup(
+				photos,
+				random
+			);
 
-			if (verticalSpace < 0) {
-				return null;
+			const firstWeight = firstGroup.length;
+			const secondWeight = secondGroup.length;
+			const totalWeight = firstWeight + secondWeight;
+			const canvasRatio = width / height;
+			const averagePhotoRatio = calculateGroupRatio(photos);
+
+			/*
+				Split based on both the available rectangle and the photos'
+				average shape. This creates a free-form mosaic instead of rows.
+			*/
+			let splitVertically;
+
+			if (canvasRatio > averagePhotoRatio * 1.15) {
+				splitVertically = true;
+			} else if (canvasRatio < averagePhotoRatio * 0.85) {
+				splitVertically = false;
+			} else {
+				splitVertically = random() >= 0.5;
 			}
 
-			const verticalGap = verticalSpace / (rows.length + 1);
+			const randomBias = 0.88 + random() * 0.24;
+			let firstFraction =
+				(firstWeight / totalWeight) * randomBias;
 
-			/*
-				Prefer layouts that use the height efficiently, have moderate
-				spacing, and keep neighboring row heights balanced.
-			*/
-			const spacingPenalty =
-				Math.abs(verticalGap - horizontalGap) * 5;
+			firstFraction = Math.max(
+				0.22,
+				Math.min(0.78, firstFraction)
+			);
 
-			const unusedPenalty = verticalGap * 0.8;
+			if (splitVertically) {
+				const availableWidth = width - gap;
+				const firstWidth = availableWidth * firstFraction;
+				const secondWidth = availableWidth - firstWidth;
 
-			return {
-				rows,
-				horizontalGap,
-				verticalGap,
-				score:
-					spacingPenalty +
-					unusedPenalty +
-					balancePenalty * 0.15
-			};
+				createRecursiveMosaic(
+					firstGroup,
+					x,
+					y,
+					firstWidth,
+					height,
+					gap,
+					random,
+					leaves
+				);
+
+				createRecursiveMosaic(
+					secondGroup,
+					x + firstWidth + gap,
+					y,
+					secondWidth,
+					height,
+					gap,
+					random,
+					leaves
+				);
+			} else {
+				const availableHeight = height - gap;
+				const firstHeight = availableHeight * firstFraction;
+				const secondHeight = availableHeight - firstHeight;
+
+				createRecursiveMosaic(
+					firstGroup,
+					x,
+					y,
+					width,
+					firstHeight,
+					gap,
+					random,
+					leaves
+				);
+
+				createRecursiveMosaic(
+					secondGroup,
+					x,
+					y + firstHeight + gap,
+					width,
+					secondHeight,
+					gap,
+					random,
+					leaves
+				);
+			}
 		}
 
-		function buildJustifiedWallpaperRows(
+		function scoreRecursiveMosaic(leaves) {
+			let unusedArea = 0;
+			let tinyPenalty = 0;
+			let shapePenalty = 0;
+
+			for (const leaf of leaves) {
+				const photoRatio = leaf.photo.ratio;
+				const cellRatio = leaf.width / leaf.height;
+
+				let drawWidth;
+				let drawHeight;
+
+				if (photoRatio > cellRatio) {
+					drawWidth = leaf.width;
+					drawHeight = leaf.width / photoRatio;
+				} else {
+					drawHeight = leaf.height;
+					drawWidth = leaf.height * photoRatio;
+				}
+
+				const cellArea = leaf.width * leaf.height;
+				const imageArea = drawWidth * drawHeight;
+
+				unusedArea += Math.max(0, cellArea - imageArea);
+
+				if (leaf.width < 180) {
+					tinyPenalty += (180 - leaf.width) * 500;
+				}
+
+				if (leaf.height < 140) {
+					tinyPenalty += (140 - leaf.height) * 500;
+				}
+
+				shapePenalty +=
+					Math.abs(Math.log(cellRatio / photoRatio)) * 1500;
+			}
+
+			return unusedArea + tinyPenalty + shapePenalty;
+		}
+
+		function buildRecursiveWallpaperLayout(
 			photos,
 			canvasWidth,
 			canvasHeight,
 			options
 		) {
-			const horizontalPadding = 8;
-			const verticalPadding = 0;
-			const usableWidth = canvasWidth - horizontalPadding * 2;
-			const usableHeight = canvasHeight;
-			const horizontalGap = 8;
-			const selected = seededShuffle(photos, options.random).slice(
-				0,
-				options.count
-			);
+			const padding = 8;
+			const gap = 8;
+			const selected = seededShuffle(
+				photos,
+				options.random
+			).slice(0, options.count);
 
-			let best = null;
-			const maximumAttempts = 1000;
-			const minimumRows = Math.max(2, Math.floor(options.count / 6));
-			const maximumRows = Math.min(7, Math.ceil(options.count / 2));
-			const possibleLayouts = [];
+			let bestLayout = null;
+			let bestScore = Number.POSITIVE_INFINITY;
 
 			/*
-				Prepare every valid row-count/partition combination once.
-				Each of the 1000 attempts then picks one combination and tests
-				a newly shuffled deterministic photo order.
+				The recursive system always creates a complete layout. We still
+				try 1000 seeded variations and keep the one that wastes the
+				least space and avoids tiny cells.
 			*/
-			for (
-				let rowCount = minimumRows;
-				rowCount <= maximumRows;
-				rowCount++
-			) {
-				const partitions = createRowPartitions(
-					options.count,
-					rowCount,
-					2,
-					6
-				);
-
-				for (const partition of partitions) {
-					possibleLayouts.push(partition);
-				}
-			}
-
-			if (possibleLayouts.length === 0) {
-				throw new Error(
-					"The selected photo count cannot be divided into valid rows."
-				);
-			}
-
-			for (let attempt = 0; attempt < maximumAttempts; attempt++) {
-				const partition =
-					possibleLayouts[
-						Math.floor(options.random() * possibleLayouts.length)
-					];
-
-				const order =
+			for (let attempt = 0; attempt < 1000; attempt++) {
+				const orderedPhotos =
 					attempt === 0
 						? selected
 						: seededShuffle(selected, options.random);
 
-				const candidate = evaluateLayout(
-					order,
-					partition,
-					usableWidth,
-					usableHeight,
-					horizontalGap
+				const leaves = [];
+
+				createRecursiveMosaic(
+					orderedPhotos,
+					padding,
+					padding,
+					canvasWidth - padding * 2,
+					canvasHeight - padding * 2,
+					gap,
+					options.random,
+					leaves
 				);
 
-				if (
-					candidate &&
-					(!best || candidate.score < best.score)
-				) {
-					best = candidate;
+				const score = scoreRecursiveMosaic(leaves);
 
-					/*
-						A score this low means the vertical and horizontal gaps
-						are already extremely close, so further attempts are
-						unlikely to produce a visible improvement.
-					*/
-					if (best.score <= 1) {
-						break;
-					}
+				if (score < bestScore) {
+					bestScore = score;
+					bestLayout = leaves;
 				}
 			}
 
-			if (!best) {
-				throw new Error(
-					`No valid layout was found after ${maximumAttempts} attempts. Try fewer photos.`
-				);
-			}
-
 			return {
-				...best,
-				horizontalPadding,
-				verticalPadding,
+				leaves: bestLayout,
 				photoCount: options.count,
 				seed: options.seed
 			};
@@ -2436,7 +2461,7 @@
 			context.fillStyle = "#ffffff";
 			context.fillRect(0, 0, canvas.width, canvas.height);
 
-			const layout = buildJustifiedWallpaperRows(
+			const layout = buildRecursiveWallpaperLayout(
 				galleryImages,
 				canvas.width,
 				canvas.height,
@@ -2445,7 +2470,7 @@
 
 			const uniquePhotos = [
 				...new Set(
-					layout.rows.flatMap(row => row.photos)
+					layout.leaves.map(leaf => leaf.photo)
 				)
 			];
 
@@ -2458,28 +2483,17 @@
 				})
 			);
 
-			let y = layout.verticalGap;
+			for (const leaf of layout.leaves) {
+				const image = loadedImageMap.get(leaf.photo);
 
-			for (const row of layout.rows) {
-				let x = layout.horizontalPadding;
-
-				for (let index = 0; index < row.photos.length; index++) {
-					const photo = row.photos[index];
-					const image = loadedImageMap.get(photo);
-					const width = row.height * photo.ratio;
-
-					context.drawImage(
-						image,
-						x,
-						y,
-						width,
-						row.height
-					);
-
-					x += width + layout.horizontalGap;
-				}
-
-				y += row.height + layout.verticalGap;
+				drawImageContain(
+					context,
+					image,
+					leaf.x,
+					leaf.y,
+					leaf.width,
+					leaf.height
+				);
 			}
 
 			return new Promise((resolve, reject) => {
