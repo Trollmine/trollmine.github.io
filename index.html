@@ -1488,6 +1488,22 @@
 			}
 		}
 </style>
+
+<style>
+	.gallery-item {
+		cursor: pointer;
+		touch-action: manipulation;
+	}
+
+	.gallery-item video {
+		pointer-events: auto !important;
+	}
+
+	.gallery-item img {
+		pointer-events: none;
+	}
+</style>
+
 </head>
 
 <body>
@@ -3462,6 +3478,12 @@
 
 		galleryViewport.addEventListener("pointerdown", event => {
 			if (event.button !== 0 || event.shiftKey || event.ctrlKey) {
+				return;
+			}
+
+			const clickedMedia = event.target.closest(".gallery-item");
+
+			if (clickedMedia && !spacePanHeld) {
 				return;
 			}
 
@@ -6138,14 +6160,22 @@
 			lastPanTime = now;
 		}, true);
 
-		galleryViewport.addEventListener("pointerdown", () => {
+		galleryViewport.addEventListener("pointerdown", event => {
+			if (event.target.closest(".gallery-item") && !spacePanHeld) {
+				return;
+			}
+
 			cancelAnimationFrame(inertiaFrame);
 			panVelocityX = 0;
 			panVelocityY = 0;
 			lastPanTime = performance.now();
 		}, true);
 
-		galleryViewport.addEventListener("pointerup", () => {
+		galleryViewport.addEventListener("pointerup", event => {
+			if (event.target.closest(".gallery-item") && !spacePanHeld) {
+				return;
+			}
+
 			function animateInertia() {
 				panVelocityX *= 0.91;
 				panVelocityY *= 0.91;
