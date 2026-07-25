@@ -1049,42 +1049,11 @@
 			box-shadow: 0 1px 4px rgba(0, 0, 0, 0.09);
 		}
 
-		.gallery-item img,
-		.gallery-item video {
+		.gallery-item img {
 			display: block;
 			width: 100%;
 			height: 100%;
 			object-fit: cover;
-		}
-
-		.gallery-item img {
-			pointer-events: none;
-		}
-
-		.gallery-item video {
-			position: relative;
-			z-index: 1;
-			background: #111111;
-			cursor: pointer;
-		}
-
-		.gallery-item .photo-state-actions {
-			display: flex !important;
-			visibility: visible !important;
-			opacity: 1 !important;
-		}
-
-		.gallery-video-badge {
-			position: absolute;
-			left: 8px;
-			bottom: 8px;
-			z-index: 2;
-			padding: 5px 8px;
-			border-radius: 8px;
-			background: rgba(0, 0, 0, 0.72);
-			color: #ffffff;
-			font-size: 0.68rem;
-			font-weight: 850;
 			pointer-events: none;
 		}
 
@@ -1324,7 +1293,7 @@
 			<input
 				id="folderInput"
 				type="file"
-				accept="image/*,video/*"
+				accept="image/*"
 				webkitdirectory
 				directory
 				multiple
@@ -1371,11 +1340,11 @@
 							class="generator-settings-title"
 							id="generatorSettingsTitle"
 						>
-							Advanced Wallpaper Settings
+							Wallpaper Generator
 						</h2>
 						<p class="generator-settings-description">
-							Configure count, seed, layouts, backgrounds, borders,
-							history, preferences and all optional generator systems.
+							Choose how many photos the wallpaper should use and
+							set a seed to recreate the same result later.
 						</p>
 					</div>
 
@@ -1515,7 +1484,7 @@
 				<div class="gallery-empty-icon">▦</div>
 				<h2>Your gallery is empty</h2>
 				<p>
-					Choose a folder containing images and videos. They stay on your device
+					Choose a folder containing images. They stay on your device
 					and are not uploaded anywhere.
 				</p>
 			</div>
@@ -1539,25 +1508,7 @@
 						id="downloadWallpaperButton"
 						type="button"
 					>
-						Download PNG
-					</button>
-
-					<button
-						class="wallpaper-action"
-						id="previewVideoWallpaperButton"
-						type="button"
-						style="display:none;"
-					>
-						Preview video
-					</button>
-
-					<button
-						class="wallpaper-action"
-						id="exportVideoWallpaperButton"
-						type="button"
-						style="display:none;"
-					>
-						Export WebM
+						Download
 					</button>
 
 					<button
@@ -1814,8 +1765,8 @@
 		let previousPointerX = 0;
 		let previousPointerY = 0;
 
-		const minimumZoom = 0.05;
-		const maximumZoom = 8;
+		const minimumZoom = 0.25;
+		const maximumZoom = 4;
 		const mosaicGap = 7;
 
 		function isImageFile(file) {
@@ -1829,20 +1780,6 @@
 				"jpg", "jpeg", "png", "gif", "webp",
 				"avif", "bmp", "svg"
 			].includes(extension);
-		}
-
-		function isVideoFile(file) {
-			if (file.type.startsWith("video/")) {
-				return true;
-			}
-
-			const extension = file.name.split(".").pop().toLowerCase();
-
-			return ["mp4", "webm", "mov", "m4v", "ogv"].includes(extension);
-		}
-
-		function isSupportedMediaFile(file) {
-			return isImageFile(file) || isVideoFile(file);
 		}
 
 		function readFileAsDataURL(file) {
@@ -1878,51 +1815,9 @@
 			});
 		}
 
-		function measureVideo(dataUrl, file) {
-			return new Promise((resolve, reject) => {
-				const video = document.createElement("video");
-				video.preload = "metadata";
-				video.muted = true;
-				video.playsInline = true;
-
-				video.onloadedmetadata = () => {
-					resolve({
-						file,
-						src: dataUrl,
-						type: "video",
-						width: video.videoWidth || 1920,
-						height: video.videoHeight || 1080,
-						ratio: (video.videoWidth || 1920) / (video.videoHeight || 1080),
-						duration: Number.isFinite(video.duration) ? video.duration : 0
-					});
-				};
-
-				video.onerror = () => reject(
-					new Error(`Could not read ${file.name}`)
-				);
-
-				video.src = dataUrl;
-			});
-		}
-
 		async function loadGalleryImage(file) {
-			if (isVideoFile(file)) {
-				const objectUrl = URL.createObjectURL(file);
-
-				try {
-					const video = await measureVideo(objectUrl, file);
-					video.objectUrl = objectUrl;
-					return video;
-				} catch (error) {
-					URL.revokeObjectURL(objectUrl);
-					throw error;
-				}
-			}
-
 			const dataUrl = await readFileAsDataURL(file);
-			const image = await measureImage(dataUrl, file);
-			image.type = "image";
-			return image;
+			return measureImage(dataUrl, file);
 		}
 
 		function applyGalleryTransform() {
@@ -1943,53 +1838,20 @@
 			const item = document.createElement("figure");
 			item.className = "gallery-item";
 
-			if (photo.type === "video") {
-				const video = document.createElement("video");
-				video.src = photo.src;
-				video.preload = "metadata";
-				video.muted = true;
-				video.loop = true;
-				video.playsInline = true;
-				video.draggable = false;
-				video.title = "Click to play or pause";
-				video.addEventListener("pointerdown", event => event.stopPropagation());
-				video.addEventListener("click", event => {
-					event.stopPropagation();
-
-					if (video.paused) {
-						video.play().catch(() => {});
-					} else {
-						video.pause();
-					}
-				});
-
-				const badge = document.createElement("span");
-				badge.className = "gallery-video-badge";
-				badge.textContent = "VIDEO • click to play/pause";
-
-				item.appendChild(video);
-				item.appendChild(badge);
-			} else {
-				const image = document.createElement("img");
-				image.src = photo.src;
-				image.alt = photo.file.name;
-				image.draggable = false;
-				item.appendChild(image);
-			}
+			const image = document.createElement("img");
+			image.src = photo.src;
+			image.alt = photo.file.name;
+			image.draggable = false;
 
 			const caption = document.createElement("figcaption");
 			caption.className = "gallery-file-name";
 			caption.textContent =
 				photo.file.webkitRelativePath || photo.file.name;
 
+			item.appendChild(image);
 			item.appendChild(caption);
 
 			photo.element = item;
-
-			if (typeof ensurePhotoStateButtons === "function") {
-				queueMicrotask(() => ensurePhotoStateButtons(photo));
-			}
-
 			return item;
 		}
 
@@ -2071,7 +1933,7 @@
 			galleryImages = [];
 
 			const imageFiles = Array.from(folderInput.files)
-				.filter(isSupportedMediaFile)
+				.filter(isImageFile)
 				.sort((firstFile, secondFile) =>
 					firstFile.name.localeCompare(secondFile.name, undefined, {
 						numeric: true,
@@ -2088,7 +1950,7 @@
 			galleryEmpty.style.display = "block";
 			galleryEmpty.querySelector("h2").textContent = "Loading gallery…";
 			galleryEmpty.querySelector("p").textContent =
-				`Reading ${imageFiles.length} media item${imageFiles.length === 1 ? "" : "s"} from your folder.`;
+				`Reading ${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"} from your folder.`;
 
 			const loaded = await Promise.allSettled(
 				imageFiles.map(loadGalleryImage)
@@ -2100,9 +1962,9 @@
 
 			if (galleryImages.length === 0) {
 				galleryEmpty.querySelector("h2").textContent =
-					"No readable images or videos found";
+					"No readable images found";
 				galleryEmpty.querySelector("p").textContent =
-					"Try JPG, PNG, WebP, GIF, MP4, WebM or another browser-supported media format.";
+					"Try JPG, PNG, WebP, GIF or another browser-supported image format.";
 				resetGalleryView();
 				return;
 			}
@@ -2209,20 +2071,14 @@
 			return shuffled;
 		}
 
-		function getDrawableWidth(drawable) {
-			return drawable.videoWidth || drawable.naturalWidth || drawable.width || 1;
-		}
-
-		function getDrawableHeight(drawable) {
-			return drawable.videoHeight || drawable.naturalHeight || drawable.height || 1;
-		}
-
 		function drawImageContain(context, image, x, y, width, height) {
 			/*
-				Fit the entire image or video frame inside the available rectangle.
-				Nothing is cropped or stretched.
+				Fit the entire image inside the available rectangle.
+
+				Nothing is cropped or stretched. The original width/height
+				ratio is always preserved, and any unused space stays white.
 			*/
-			const sourceRatio = getDrawableWidth(image) / getDrawableHeight(image);
+			const sourceRatio = image.naturalWidth / image.naturalHeight;
 			const targetRatio = width / height;
 
 			let drawWidth;
@@ -2256,72 +2112,6 @@
 				image.onerror = reject;
 				image.src = source;
 			});
-		}
-
-		function loadCanvasVideo(source) {
-			return new Promise((resolve, reject) => {
-				const video = document.createElement("video");
-				let settled = false;
-
-				const finish = () => {
-					if (settled) return;
-					settled = true;
-					resolve(video);
-				};
-
-				video.preload = "auto";
-				video.muted = true;
-				video.defaultMuted = true;
-				video.playsInline = true;
-				video.crossOrigin = "anonymous";
-
-				video.addEventListener("loadeddata", async () => {
-					try {
-						if (Number.isFinite(video.duration) && video.duration > 0.1) {
-							video.currentTime = Math.min(0.35, Math.max(0, video.duration * 0.1));
-
-							await new Promise(done => {
-								const timeout = setTimeout(done, 700);
-								video.addEventListener("seeked", () => {
-									clearTimeout(timeout);
-									done();
-								}, { once: true });
-							});
-						}
-
-						await video.play().catch(() => {});
-						video.pause();
-						finish();
-					} catch {
-						finish();
-					}
-				}, { once: true });
-
-				video.addEventListener("canplay", finish, { once: true });
-				video.addEventListener("error", () => {
-					if (!settled) {
-						settled = true;
-						reject(new Error("This video format could not be decoded by the browser."));
-					}
-				}, { once: true });
-
-				if (String(source).startsWith("blob:") || String(source).startsWith("data:")) {
-					video.removeAttribute("crossorigin");
-				}
-
-				video.src = source;
-				video.load();
-
-				setTimeout(() => {
-					if (!settled && video.readyState >= 2) finish();
-				}, 1800);
-			});
-		}
-
-		function loadCanvasMedia(photo) {
-			return photo.type === "video"
-				? loadCanvasVideo(photo.src)
-				: loadCanvasImage(photo.src);
 		}
 
 		let generatedWallpaperBlob = null;
@@ -2730,7 +2520,6 @@
 			];
 
 			const loadedImageMap = new Map();
-			const videoRegions = [];
 
 			await Promise.all(
 				uniquePhotos.map(async photo => {
@@ -2979,10 +2768,7 @@
 		);
 
 		galleryViewport.addEventListener("pointerdown", event => {
-			if (
-				event.button !== 0 ||
-				event.target.closest(".photo-state-actions, .photo-state-button")
-			) {
+			if (event.button !== 0) {
 				return;
 			}
 
@@ -3309,17 +3095,6 @@
 				grid-template-columns: 1fr;
 			}
 		}
-	
-		.wallpaper-action.rendering {
-			opacity: 0.6;
-			cursor: wait;
-			pointer-events: none;
-		}
-
-		.gallery-item .photo-state-actions {
-			user-select: none;
-		}
-
 	</style>
 
 	<script>
@@ -3798,12 +3573,12 @@
 					const x = column * cellWidth;
 					const y = row * cellHeight;
 					const scale = Math.max(
-						cellWidth / getDrawableWidth(image),
-						cellHeight / getDrawableHeight(image)
+						cellWidth / image.naturalWidth,
+						cellHeight / image.naturalHeight
 					);
 
-					const drawWidth = getDrawableWidth(image) * scale;
-					const drawHeight = getDrawableHeight(image) * scale;
+					const drawWidth = image.naturalWidth * scale;
+					const drawHeight = image.naturalHeight * scale;
 
 					context.drawImage(
 						image,
@@ -3922,11 +3697,10 @@
 			const startedAt = performance.now();
 			const selectedPhotos = selectPhotosForAdvancedGeneration(options);
 			const loadedImageMap = new Map();
-			const videoRegions = [];
 
 			await Promise.all(
 				selectedPhotos.map(async photo => {
-					loadedImageMap.set(photo, await loadCanvasMedia(photo));
+					loadedImageMap.set(photo, await loadCanvasImage(photo.src));
 				})
 			);
 
@@ -4018,25 +3792,15 @@
 					height -= borderSize * 2 + bottomBorder;
 				}
 
-				if (leaf.photo.type === "video") {
-					videoRegions.push({
-						photo: leaf.photo,
-						video: image,
-						x,
-						y,
-						width,
-						height,
-						radius
-					});
-				}
-
 				context.save();
 				roundedRectanglePath(context, x, y, width, height, radius);
 				context.clip();
 
-				// Always preserve the complete original image/video frame.
-				// No cropping and no stretching, regardless of layout type.
-				drawImageContain(context, image, x, y, width, height);
+				if (leaf.contain) {
+					drawImageContain(context, image, x, y, width, height);
+				} else {
+					context.drawImage(image, x, y, width, height);
+				}
 
 				context.restore();
 				recentlyUsedPhotos.add(leaf.photo);
@@ -4058,11 +3822,7 @@
 				width: canvas.width,
 				height: canvas.height,
 				layout: layoutMode,
-				generationTime,
-				videoRegions,
-				hasVideos: videoRegions.length > 0,
-				animatedBlob: null,
-				animatedUrl: null
+				generationTime
 			};
 		}
 
@@ -4071,162 +3831,9 @@
 				if (choice.url) {
 					URL.revokeObjectURL(choice.url);
 				}
-
-				if (choice.animatedUrl) {
-					URL.revokeObjectURL(choice.animatedUrl);
-				}
 			}
 
 			generatedChoices = [];
-		}
-
-
-		function getSupportedVideoMimeType() {
-			const candidates = [
-				"video/webm;codecs=vp9",
-				"video/webm;codecs=vp8",
-				"video/webm"
-			];
-
-			return candidates.find(type =>
-				window.MediaRecorder &&
-				MediaRecorder.isTypeSupported(type)
-			) || "";
-		}
-
-		async function createAnimatedWallpaper(choice, durationSeconds = 6) {
-			if (!choice || !choice.hasVideos || choice.videoRegions.length === 0) {
-				throw new Error("This wallpaper does not contain any videos.");
-			}
-
-			if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
-				throw new Error("Video export is not supported by this browser.");
-			}
-
-			const canvas = document.createElement("canvas");
-			canvas.width = choice.width;
-			canvas.height = choice.height;
-			const context = canvas.getContext("2d", { alpha: true });
-			const baseImage = await loadCanvasImage(choice.url);
-			const frameRate = 30;
-			const stream = canvas.captureStream(frameRate);
-			const mimeType = getSupportedVideoMimeType();
-			const recorder = mimeType
-				? new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 12000000 })
-				: new MediaRecorder(stream);
-
-			const chunks = [];
-			recorder.addEventListener("dataavailable", event => {
-				if (event.data && event.data.size > 0) {
-					chunks.push(event.data);
-				}
-			});
-
-			const stopped = new Promise((resolve, reject) => {
-				recorder.addEventListener("stop", resolve, { once: true });
-				recorder.addEventListener("error", () => reject(
-					new Error("The browser could not finish the video export.")
-				), { once: true });
-			});
-
-			for (const region of choice.videoRegions) {
-				try {
-					region.video.currentTime = 0;
-					await region.video.play();
-				} catch {
-					// Muted local videos normally autoplay, but a failed play
-					// still leaves the captured thumbnail visible.
-				}
-			}
-
-			recorder.start(250);
-			const startedAt = performance.now();
-
-			await new Promise(resolve => {
-				function drawFrame(now) {
-					const elapsed = (now - startedAt) / 1000;
-
-					context.clearRect(0, 0, canvas.width, canvas.height);
-					context.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
-
-					for (const region of choice.videoRegions) {
-						context.save();
-						roundedRectanglePath(
-							context,
-							region.x,
-							region.y,
-							region.width,
-							region.height,
-							region.radius
-						);
-						context.clip();
-						drawImageContain(
-							context,
-							region.video,
-							region.x,
-							region.y,
-							region.width,
-							region.height
-						);
-						context.restore();
-					}
-
-					if (elapsed >= durationSeconds) {
-						resolve();
-						return;
-					}
-
-					requestAnimationFrame(drawFrame);
-				}
-
-				requestAnimationFrame(drawFrame);
-			});
-
-			recorder.stop();
-			await stopped;
-
-			for (const region of choice.videoRegions) {
-				region.video.pause();
-			}
-
-			const blob = new Blob(chunks, {
-				type: recorder.mimeType || mimeType || "video/webm"
-			});
-
-			if (!blob.size) {
-				throw new Error("The exported video was empty.");
-			}
-
-			return blob;
-		}
-
-		async function ensureAnimatedWallpaper(choice, triggerButton) {
-			if (choice.animatedBlob) {
-				return choice.animatedBlob;
-			}
-
-			const oldText = triggerButton ? triggerButton.textContent : "";
-
-			if (triggerButton) {
-				triggerButton.classList.add("rendering");
-				triggerButton.textContent = "Rendering video…";
-			}
-
-			try {
-				choice.animatedBlob = await createAnimatedWallpaper(choice);
-
-				if (choice.animatedUrl) {
-					URL.revokeObjectURL(choice.animatedUrl);
-				}
-
-				choice.animatedUrl = URL.createObjectURL(choice.animatedBlob);
-				return choice.animatedBlob;
-			} finally {
-				if (triggerButton) {
-					triggerButton.classList.remove("rendering");
-					triggerButton.textContent = oldText;
-				}
-			}
 		}
 
 		function selectGeneratedChoice(index) {
@@ -4235,31 +3842,6 @@
 
 			generatedWallpaperBlob = choice.blob;
 			generatedWallpaperUrl = choice.url;
-
-			const previewVideo = document.getElementById("wallpaperPreviewVideo");
-			const previewImage = document.getElementById("wallpaperPreviewImage");
-			const previewVideoButton = document.getElementById("previewVideoWallpaperButton");
-			const exportVideoButton = document.getElementById("exportVideoWallpaperButton");
-
-			if (previewVideo) {
-				previewVideo.pause();
-				previewVideo.style.display = "none";
-				previewVideo.removeAttribute("src");
-				previewVideo.load();
-			}
-
-			if (previewImage) {
-				previewImage.style.display = "block";
-				previewImage.src = choice.url;
-			}
-
-			if (previewVideoButton) {
-				previewVideoButton.style.display = choice.hasVideos ? "inline-flex" : "none";
-			}
-
-			if (exportVideoButton) {
-				exportVideoButton.style.display = choice.hasVideos ? "inline-flex" : "none";
-			}
 
 			document.querySelectorAll(".wallpaper-choice").forEach((element, choiceIndex) => {
 				element.classList.toggle("selected", choiceIndex === index);
@@ -4461,62 +4043,6 @@
 			}
 		}, true);
 
-		const previewVideoWallpaperButton =
-			document.getElementById("previewVideoWallpaperButton");
-		const exportVideoWallpaperButton =
-			document.getElementById("exportVideoWallpaperButton");
-		const wallpaperPreviewVideo =
-			document.getElementById("wallpaperPreviewVideo");
-		const wallpaperPreviewImage =
-			document.getElementById("wallpaperPreviewImage");
-
-		previewVideoWallpaperButton.addEventListener("click", async () => {
-			const choice = generatedChoices[selectedChoiceIndex];
-
-			if (!choice || !choice.hasVideos) {
-				showGalleryToast("This wallpaper does not contain a video.");
-				return;
-			}
-
-			try {
-				await ensureAnimatedWallpaper(choice, previewVideoWallpaperButton);
-				wallpaperPreviewImage.style.display = "none";
-				wallpaperPreviewVideo.src = choice.animatedUrl;
-				wallpaperPreviewVideo.style.display = "block";
-				wallpaperPreviewVideo.currentTime = 0;
-				await wallpaperPreviewVideo.play();
-			} catch (error) {
-				console.error(error);
-				showGalleryToast(error.message || "Could not preview the video wallpaper.");
-			}
-		});
-
-		exportVideoWallpaperButton.addEventListener("click", async () => {
-			const choice = generatedChoices[selectedChoiceIndex];
-
-			if (!choice || !choice.hasVideos) {
-				showGalleryToast("This wallpaper does not contain a video.");
-				return;
-			}
-
-			try {
-				const blob = await ensureAnimatedWallpaper(
-					choice,
-					exportVideoWallpaperButton
-				);
-
-				const url = URL.createObjectURL(blob);
-				const link = document.createElement("a");
-				link.href = url;
-				link.download = `wallpaper-${choice.seed || Date.now()}.webm`;
-				link.click();
-				setTimeout(() => URL.revokeObjectURL(url), 1200);
-			} catch (error) {
-				console.error(error);
-				showGalleryToast(error.message || "Could not export the video wallpaper.");
-			}
-		});
-
 		function refreshPhotoState(photo) {
 			if (!photo.element) {
 				return;
@@ -4549,11 +4075,11 @@
 
 			if (excludedPhotos.has(photo)) {
 				excludedPhotos.delete(photo);
-				showGalleryToast("Media enabled again.");
+				showGalleryToast("Photo included again.");
 			} else {
 				excludedPhotos.add(photo);
 				preferredPhotos.delete(photo);
-				showGalleryToast("Media disabled for wallpaper generation.");
+				showGalleryToast("Photo excluded from wallpaper generation.");
 			}
 
 			refreshPhotoState(photo);
@@ -4578,10 +4104,10 @@
 
 			if (preferredPhotos.has(photo)) {
 				preferredPhotos.delete(photo);
-				showGalleryToast("Media preference removed.");
+				showGalleryToast("Photo preference removed.");
 			} else {
 				preferredPhotos.add(photo);
-				showGalleryToast("Media preferred for wallpaper generation.");
+				showGalleryToast("Photo preferred for wallpaper generation.");
 			}
 
 			refreshPhotoState(photo);
@@ -4709,8 +4235,7 @@
 			position: absolute;
 			right: 8px;
 			bottom: 8px;
-			z-index: 20;
-			pointer-events: auto;
+			z-index: 5;
 			display: flex;
 			margin: 0;
 			opacity: 0;
@@ -4724,10 +4249,6 @@
 		}
 
 		.photo-state-button {
-			position: relative;
-			z-index: 21;
-			pointer-events: auto;
-			touch-action: manipulation;
 			width: 34px;
 			height: 34px;
 			padding: 0;
@@ -4938,25 +4459,14 @@
 			const preferButton = document.createElement("button");
 			preferButton.type = "button";
 			preferButton.className = "photo-state-button";
-			preferButton.title = "Prefer this media";
+			preferButton.title = "Prefer this photo";
 			preferButton.textContent = "★";
 
 			const excludeButton = document.createElement("button");
 			excludeButton.type = "button";
 			excludeButton.className = "photo-state-button";
-			excludeButton.title = "Disable this media";
+			excludeButton.title = "Exclude this photo";
 			excludeButton.textContent = "×";
-
-			for (const button of [preferButton, excludeButton]) {
-				button.addEventListener("pointerdown", event => {
-					event.stopPropagation();
-				});
-			}
-
-			for (const button of [preferButton, excludeButton]) {
-				button.addEventListener("mousedown", event => event.stopPropagation());
-				button.addEventListener("touchstart", event => event.stopPropagation(), { passive: true });
-			}
 
 			preferButton.addEventListener("click", event => {
 				event.preventDefault();
@@ -4968,10 +4478,10 @@
 
 				if (preferredPhotos.has(photo)) {
 					preferredPhotos.delete(photo);
-					showGalleryToast("Media preference removed.");
+					showGalleryToast("Photo preference removed.");
 				} else {
 					preferredPhotos.add(photo);
-					showGalleryToast("Media preferred.");
+					showGalleryToast("Photo preferred.");
 				}
 
 				refreshPhotoState(photo);
@@ -4983,11 +4493,11 @@
 
 				if (excludedPhotos.has(photo)) {
 					excludedPhotos.delete(photo);
-					showGalleryToast("Media enabled again.");
+					showGalleryToast("Photo included again.");
 				} else {
 					excludedPhotos.add(photo);
 					preferredPhotos.delete(photo);
-					showGalleryToast("Media disabled.");
+					showGalleryToast("Photo excluded.");
 				}
 
 				refreshPhotoState(photo);
@@ -5031,10 +4541,10 @@
 
 			if (preferredPhotos.has(photo)) {
 				preferredPhotos.delete(photo);
-				showGalleryToast("Media preference removed.");
+				showGalleryToast("Photo preference removed.");
 			} else {
 				preferredPhotos.add(photo);
-				showGalleryToast("Media preferred.");
+				showGalleryToast("Photo preferred.");
 			}
 
 			refreshPhotoState(photo);
