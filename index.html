@@ -2209,54 +2209,138 @@
 			};
 		}
 
-		function calculateGroupRatio(photos) {
-			if (photos.length === 0) {
-				return 1;
-			}
-
-			const totalRatio = photos.reduce(
-				(total, photo) => total + photo.ratio,
-				0
-			);
-
-			return Math.max(0.05, totalRatio / photos.length);
+		function createLeafNode(photo) {
+			return {
+				type: "leaf",
+				photo,
+				ratio: photo.ratio
+			};
 		}
 
-		function splitPhotoGroup(photos, random) {
-			if (photos.length <= 1) {
-				return [photos, []];
+		function combineMosaicNodes(first, second, direction) {
+			if (direction === "vertical") {
+				/*
+					Side-by-side cells share the same height, so their aspect
+					ratios add together.
+				*/
+				return {
+					type: "split",
+					direction,
+					first,
+					second,
+					ratio: first.ratio + second.ratio
+				};
 			}
 
-			const shuffled = seededShuffle(photos, random);
-			const middle = Math.max(
-				1,
-				Math.min(
-					shuffled.length - 1,
-					Math.round(
-						shuffled.length * (0.35 + random() * 0.3)
+			/*
+				Stacked cells share the same width. The combined height is the
+				sum of both child heights.
+			*/
+			return {
+				type: "split",
+				direction,
+				first,
+				second,
+				ratio:
+					1 /
+					(
+						1 / first.ratio +
+						1 / second.ratio
 					)
-				)
-			);
-
-			return [
-				shuffled.slice(0, middle),
-				shuffled.slice(middle)
-			];
+			};
 		}
 
-		function createRecursiveMosaic(
-			photos,
-			x,
-			y,
-			width,
-			height,
-			gap,
-			random,
-			leaves
-		) {
-			if (photos.length === 1) {
+		function buildRandomMosaicTree(photos, random) {
+			let nodes = seededShuffle(
+				photos.map(createLeafNode),
+				random
+			);
+
+			while (nodes.length > 1) {
+				const firstIndex = Math.floor(random() * nodes.length);
+				const first = nodes.splice(firstIndex, 1)[0];
+
+				const secondIndex = Math.floor(random() * nodes.length);
+				const second = nodes.splice(secondIndex, 1)[0];
+
+				const verticalRatio =
+					first.ratio + second.ratio;
+
+				const horizontalRatio =
+					1 /
+					(
+						1 / first.ratio +
+						1 / second.ratio
+					);
+
+				/*
+					Prefer the split that does not create an extremely thin
+					combined region, while still allowing seeded variation.
+				*/
+				const verticalShapeScore =
+					Math.abs(Math.log(verticalRatio / (16 / 9)));
+
+				const horizontalShapeScore =
+					Math.abs(Math.log(horizontalRatio / (16 / 9)));
+
+				let direction;
+
+				if (Math.abs(verticalShapeScore - horizontalShapeScore) < 0.2) {
+					direction = random() >= 0.5
+						? "vertical"
+						: "horizontal";
+				} else {
+					direction =
+						verticalShapeScore < horizontalShapeScore
+							? "vertical"
+							: "horizontal";
+				}
+
+				nodes.push(
+					combineMosaicNodes(
+						first,
+						second,
+						direction
+					)
+				);
+			}
+
+			return nodes[0];
+		}
+
+		function scoreMosaicTree(node, targetRatio) {
+			let score = Math.abs(
+				Math.log(node.ratio / targetRatio)
+			) * 100000;
+
+			function inspect(current) {
+				if (current.type === "leaf") {
+					return;
+				}
+
+				const firstRatio = current.first.ratio;
+				const secondRatio = current.second.ratio;
+
+				/*
+					Penalize wildly unbalanced neighboring cells so the final
+					layout stays readable and avoids very thin strips.
+				*/
+				score += Math.abs(
+					Math.log(firstRatio / secondRatio)
+				) * 180;
+
+				inspect(current.first);
+				inspect(current.second);
+			}
+
+			inspect(node);
+			return score;
+		}
+
+		function layoutMosaicTree(node, x, y, width, height, gap, leaves) {
+			if (node.type === "leaf") {
 				leaves.push({
-					photo: photos[0],
+					photo: node.photo,
 					x,
 					y,
 					width,
@@ -2265,133 +2349,71 @@
 				return;
 			}
 
-			const [firstGroup, secondGroup] = splitPhotoGroup(
-				photos,
-				random
-			);
+			if (node.direction === "vertical") {
+				const availableWidth = Math.max(1, width - gap);
+				const firstWidth =
+					availableWidth *
+					(
+						node.first.ratio /
+						(node.first.ratio + node.second.ratio)
+					);
 
-			const firstWeight = firstGroup.length;
-			const secondWeight = secondGroup.length;
-			const totalWeight = firstWeight + secondWeight;
-			const canvasRatio = width / height;
-			const averagePhotoRatio = calculateGroupRatio(photos);
-
-			/*
-				Split based on both the available rectangle and the photos'
-				average shape. This creates a free-form mosaic instead of rows.
-			*/
-			let splitVertically;
-
-			if (canvasRatio > averagePhotoRatio * 1.15) {
-				splitVertically = true;
-			} else if (canvasRatio < averagePhotoRatio * 0.85) {
-				splitVertically = false;
-			} else {
-				splitVertically = random() >= 0.5;
-			}
-
-			const randomBias = 0.88 + random() * 0.24;
-			let firstFraction =
-				(firstWeight / totalWeight) * randomBias;
-
-			firstFraction = Math.max(
-				0.22,
-				Math.min(0.78, firstFraction)
-			);
-
-			if (splitVertically) {
-				const availableWidth = width - gap;
-				const firstWidth = availableWidth * firstFraction;
 				const secondWidth = availableWidth - firstWidth;
 
-				createRecursiveMosaic(
-					firstGroup,
+				layoutMosaicTree(
+					node.first,
 					x,
 					y,
 					firstWidth,
 					height,
 					gap,
-					random,
 					leaves
 				);
 
-				createRecursiveMosaic(
-					secondGroup,
+				layoutMosaicTree(
+					node.second,
 					x + firstWidth + gap,
 					y,
 					secondWidth,
 					height,
 					gap,
-					random,
-					leaves
-				);
-			} else {
-				const availableHeight = height - gap;
-				const firstHeight = availableHeight * firstFraction;
-				const secondHeight = availableHeight - firstHeight;
-
-				createRecursiveMosaic(
-					firstGroup,
-					x,
-					y,
-					width,
-					firstHeight,
-					gap,
-					random,
 					leaves
 				);
 
-				createRecursiveMosaic(
-					secondGroup,
-					x,
-					y + firstHeight + gap,
-					width,
-					secondHeight,
-					gap,
-					random,
-					leaves
-				);
-			}
-		}
-
-		function scoreRecursiveMosaic(leaves) {
-			let unusedArea = 0;
-			let tinyPenalty = 0;
-			let shapePenalty = 0;
-
-			for (const leaf of leaves) {
-				const photoRatio = leaf.photo.ratio;
-				const cellRatio = leaf.width / leaf.height;
-
-				let drawWidth;
-				let drawHeight;
-
-				if (photoRatio > cellRatio) {
-					drawWidth = leaf.width;
-					drawHeight = leaf.width / photoRatio;
-				} else {
-					drawHeight = leaf.height;
-					drawWidth = leaf.height * photoRatio;
-				}
-
-				const cellArea = leaf.width * leaf.height;
-				const imageArea = drawWidth * drawHeight;
-
-				unusedArea += Math.max(0, cellArea - imageArea);
-
-				if (leaf.width < 180) {
-					tinyPenalty += (180 - leaf.width) * 500;
-				}
-
-				if (leaf.height < 140) {
-					tinyPenalty += (140 - leaf.height) * 500;
-				}
-
-				shapePenalty +=
-					Math.abs(Math.log(cellRatio / photoRatio)) * 1500;
+				return;
 			}
 
-			return unusedArea + tinyPenalty + shapePenalty;
+			const firstHeight =
+				width / node.first.ratio;
+
+			const secondHeight =
+				width / node.second.ratio;
+
+			const naturalTotalHeight = firstHeight + secondHeight;
+			const availableHeight = Math.max(1, height - gap);
+			const scale = availableHeight / naturalTotalHeight;
+			const scaledFirstHeight = firstHeight * scale;
+			const scaledSecondHeight = availableHeight - scaledFirstHeight;
+
+			layoutMosaicTree(
+				node.first,
+				x,
+				y,
+				width,
+				scaledFirstHeight,
+				gap,
+				leaves
+			);
+
+			layoutMosaicTree(
+				node.second,
+				x,
+				y + scaledFirstHeight + gap,
+				width,
+				scaledSecondHeight,
+				gap,
+				leaves
+			);
 		}
 
 		function buildRecursiveWallpaperLayout(
@@ -2402,48 +2424,71 @@
 		) {
 			const padding = 8;
 			const gap = 8;
+			const targetWidth = canvasWidth - padding * 2;
+			const targetHeight = canvasHeight - padding * 2;
+			const targetRatio = targetWidth / targetHeight;
 			const selected = seededShuffle(
 				photos,
 				options.random
 			).slice(0, options.count);
 
-			let bestLayout = null;
+			let bestTree = null;
 			let bestScore = Number.POSITIVE_INFINITY;
 
-			/*
-				The recursive system always creates a complete layout. We still
-				try 1000 seeded variations and keep the one that wastes the
-				least space and avoids tiny cells.
-			*/
 			for (let attempt = 0; attempt < 1000; attempt++) {
-				const orderedPhotos =
-					attempt === 0
-						? selected
-						: seededShuffle(selected, options.random);
-
-				const leaves = [];
-
-				createRecursiveMosaic(
-					orderedPhotos,
-					padding,
-					padding,
-					canvasWidth - padding * 2,
-					canvasHeight - padding * 2,
-					gap,
-					options.random,
-					leaves
+				const tree = buildRandomMosaicTree(
+					selected,
+					options.random
 				);
 
-				const score = scoreRecursiveMosaic(leaves);
+				const score = scoreMosaicTree(
+					tree,
+					targetRatio
+				);
 
 				if (score < bestScore) {
 					bestScore = score;
-					bestLayout = leaves;
+					bestTree = tree;
 				}
 			}
 
+			/*
+				Fit the complete tree inside the wallpaper. All internal cells
+				match their photos exactly, so there are no blank areas between
+				images. Only a small centered outer margin can remain when the
+				tree's final ratio differs from 16:9.
+			*/
+			let layoutWidth;
+			let layoutHeight;
+
+			if (bestTree.ratio > targetRatio) {
+				layoutWidth = targetWidth;
+				layoutHeight = targetWidth / bestTree.ratio;
+			} else {
+				layoutHeight = targetHeight;
+				layoutWidth = targetHeight * bestTree.ratio;
+			}
+
+			const startX =
+				padding + (targetWidth - layoutWidth) / 2;
+
+			const startY =
+				padding + (targetHeight - layoutHeight) / 2;
+
+			const leaves = [];
+
+			layoutMosaicTree(
+				bestTree,
+				startX,
+				startY,
+				layoutWidth,
+				layoutHeight,
+				gap,
+				leaves
+			);
+
 			return {
-				leaves: bestLayout,
+				leaves,
 				photoCount: options.count,
 				seed: options.seed
 			};
@@ -2486,8 +2531,7 @@
 			for (const leaf of layout.leaves) {
 				const image = loadedImageMap.get(leaf.photo);
 
-				drawImageContain(
-					context,
+				context.drawImage(
 					image,
 					leaf.x,
 					leaf.y,
