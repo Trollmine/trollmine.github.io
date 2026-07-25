@@ -1062,8 +1062,16 @@
 		}
 
 		.gallery-item video {
+			position: relative;
+			z-index: 1;
 			background: #111111;
 			cursor: pointer;
+		}
+
+		.gallery-item .photo-state-actions {
+			display: flex !important;
+			visibility: visible !important;
+			opacity: 1 !important;
 		}
 
 		.gallery-video-badge {
@@ -1316,7 +1324,7 @@
 			<input
 				id="folderInput"
 				type="file"
-				accept="image/*"
+				accept="image/*,video/*"
 				webkitdirectory
 				directory
 				multiple
@@ -1363,11 +1371,11 @@
 							class="generator-settings-title"
 							id="generatorSettingsTitle"
 						>
-							Wallpaper Generator
+							Advanced Wallpaper Settings
 						</h2>
 						<p class="generator-settings-description">
-							Choose how many photos the wallpaper should use and
-							set a seed to recreate the same result later.
+							Configure count, seed, layouts, backgrounds, borders,
+							history, preferences and all optional generator systems.
 						</p>
 					</div>
 
@@ -1898,12 +1906,20 @@
 		}
 
 		async function loadGalleryImage(file) {
-			const dataUrl = await readFileAsDataURL(file);
-
 			if (isVideoFile(file)) {
-				return measureVideo(dataUrl, file);
+				const objectUrl = URL.createObjectURL(file);
+
+				try {
+					const video = await measureVideo(objectUrl, file);
+					video.objectUrl = objectUrl;
+					return video;
+				} catch (error) {
+					URL.revokeObjectURL(objectUrl);
+					throw error;
+				}
 			}
 
+			const dataUrl = await readFileAsDataURL(file);
 			const image = await measureImage(dataUrl, file);
 			image.type = "image";
 			return image;
@@ -2245,28 +2261,60 @@
 		function loadCanvasVideo(source) {
 			return new Promise((resolve, reject) => {
 				const video = document.createElement("video");
-				video.src = source;
+				let settled = false;
+
+				const finish = () => {
+					if (settled) return;
+					settled = true;
+					resolve(video);
+				};
+
 				video.preload = "auto";
 				video.muted = true;
+				video.defaultMuted = true;
 				video.playsInline = true;
+				video.crossOrigin = "anonymous";
 
-				video.onloadeddata = async () => {
+				video.addEventListener("loadeddata", async () => {
 					try {
-						if (Number.isFinite(video.duration) && video.duration > 0.25) {
-							video.currentTime = Math.min(0.5, video.duration * 0.15);
+						if (Number.isFinite(video.duration) && video.duration > 0.1) {
+							video.currentTime = Math.min(0.35, Math.max(0, video.duration * 0.1));
+
 							await new Promise(done => {
-								video.onseeked = done;
-								setTimeout(done, 450);
+								const timeout = setTimeout(done, 700);
+								video.addEventListener("seeked", () => {
+									clearTimeout(timeout);
+									done();
+								}, { once: true });
 							});
 						}
 
-						resolve(video);
+						await video.play().catch(() => {});
+						video.pause();
+						finish();
 					} catch {
-						resolve(video);
+						finish();
 					}
-				};
+				}, { once: true });
 
-				video.onerror = reject;
+				video.addEventListener("canplay", finish, { once: true });
+				video.addEventListener("error", () => {
+					if (!settled) {
+						settled = true;
+						reject(new Error("This video format could not be decoded by the browser."));
+					}
+				}, { once: true });
+
+				if (String(source).startsWith("blob:") || String(source).startsWith("data:")) {
+					video.removeAttribute("crossorigin");
+				}
+
+				video.src = source;
+				video.load();
+
+				setTimeout(() => {
+					if (!settled && video.readyState >= 2) finish();
+				}, 1800);
 			});
 		}
 
@@ -4901,9 +4949,13 @@
 
 			for (const button of [preferButton, excludeButton]) {
 				button.addEventListener("pointerdown", event => {
-					event.preventDefault();
 					event.stopPropagation();
 				});
+			}
+
+			for (const button of [preferButton, excludeButton]) {
+				button.addEventListener("mousedown", event => event.stopPropagation());
+				button.addEventListener("touchstart", event => event.stopPropagation(), { passive: true });
 			}
 
 			preferButton.addEventListener("click", event => {
