@@ -612,6 +612,104 @@
 			box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12);
 		}
 
+		.generator-settings {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: end;
+			gap: 12px;
+			padding: 12px 16px;
+			border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+			background: rgba(255, 255, 255, 0.96);
+		}
+
+		.generator-setting {
+			display: flex;
+			flex-direction: column;
+			gap: 5px;
+			min-width: 110px;
+		}
+
+		.generator-setting label,
+		.generator-mode-label {
+			font-size: 0.72rem;
+			font-weight: 800;
+			color: #555;
+			text-transform: uppercase;
+			letter-spacing: 0.06em;
+		}
+
+		.generator-setting input[type="number"],
+		.generator-setting input[type="text"] {
+			height: 38px;
+			padding: 0 10px;
+			border: 1px solid rgba(0, 0, 0, 0.16);
+			border-radius: 9px;
+			background: #fff;
+			color: #111;
+			font: inherit;
+			font-weight: 700;
+		}
+
+		.generator-mode {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			height: 38px;
+		}
+
+		.generator-mode input {
+			width: 18px;
+			height: 18px;
+		}
+
+		.generator-seed-row {
+			display: flex;
+			gap: 7px;
+		}
+
+		.generator-seed-row input {
+			width: 150px;
+		}
+
+		.seed-randomize-button {
+			height: 38px;
+			padding: 0 12px;
+			border: 1px solid rgba(0, 0, 0, 0.16);
+			border-radius: 9px;
+			background: #fff;
+			color: #111;
+			font: inherit;
+			font-weight: 800;
+			cursor: pointer;
+		}
+
+		.generator-setting.is-disabled {
+			opacity: 0.45;
+		}
+
+		.preview-seed {
+			margin: 10px 0 0;
+			text-align: center;
+			font-size: 0.82rem;
+			font-weight: 700;
+			color: #555;
+		}
+
+		@media (max-width: 700px) {
+			.generator-settings {
+				align-items: stretch;
+			}
+
+			.generator-setting {
+				flex: 1 1 135px;
+			}
+
+			.generator-seed-row input {
+				width: 100%;
+			}
+		}
+
+
 		.gallery-control {
 			display: flex;
 			align-items: center;
@@ -1085,6 +1183,52 @@
 			</button>
 		</div>
 
+		<div class="generator-settings" id="generatorSettings">
+			<div class="generator-setting">
+				<span class="generator-mode-label">Photo amount</span>
+				<label class="generator-mode">
+					<input id="randomCountEnabled" type="checkbox" checked>
+					Random amount
+				</label>
+			</div>
+
+			<div class="generator-setting" id="fixedCountSetting">
+				<label for="fixedPhotoCount">Fixed count</label>
+				<input id="fixedPhotoCount" type="number" min="1" max="100" value="18">
+			</div>
+
+			<div class="generator-setting" id="minimumCountSetting">
+				<label for="minimumPhotoCount">Minimum</label>
+				<input id="minimumPhotoCount" type="number" min="1" max="100" value="15">
+			</div>
+
+			<div class="generator-setting" id="maximumCountSetting">
+				<label for="maximumPhotoCount">Maximum</label>
+				<input id="maximumPhotoCount" type="number" min="1" max="100" value="20">
+			</div>
+
+			<div class="generator-setting">
+				<label for="wallpaperSeed">Seed</label>
+				<div class="generator-seed-row">
+					<input
+						id="wallpaperSeed"
+						type="text"
+						value=""
+						placeholder="Random seed"
+						autocomplete="off"
+					>
+					<button
+						class="seed-randomize-button"
+						id="randomizeSeedButton"
+						type="button"
+						title="Create a new random seed"
+					>
+						↻
+					</button>
+				</div>
+			</div>
+		</div>
+
 		<div class="gallery-viewport" id="galleryViewport">
 			<div class="gallery-world" id="galleryWorld">
 				<div class="gallery-grid" id="galleryGrid"></div>
@@ -1109,6 +1253,8 @@
 					id="wallpaperPreviewImage"
 					alt="Generated mosaic wallpaper preview"
 				>
+
+				<p class="preview-seed" id="previewSeed"></p>
 
 				<div class="wallpaper-preview-actions">
 					<button
@@ -1331,6 +1477,26 @@
 			document.getElementById("remakeWallpaperButton");
 		const closeWallpaperPreviewButton =
 			document.getElementById("closeWallpaperPreviewButton");
+		const randomCountEnabled =
+			document.getElementById("randomCountEnabled");
+		const fixedPhotoCount =
+			document.getElementById("fixedPhotoCount");
+		const minimumPhotoCount =
+			document.getElementById("minimumPhotoCount");
+		const maximumPhotoCount =
+			document.getElementById("maximumPhotoCount");
+		const fixedCountSetting =
+			document.getElementById("fixedCountSetting");
+		const minimumCountSetting =
+			document.getElementById("minimumCountSetting");
+		const maximumCountSetting =
+			document.getElementById("maximumCountSetting");
+		const wallpaperSeed =
+			document.getElementById("wallpaperSeed");
+		const randomizeSeedButton =
+			document.getElementById("randomizeSeedButton");
+		const previewSeed =
+			document.getElementById("previewSeed");
 		const zoomDisplay = document.getElementById("zoomDisplay");
 
 		let galleryImages = [];
@@ -1693,85 +1859,155 @@
 		let generatedWallpaperBlob = null;
 		let generatedWallpaperUrl = null;
 
-		function makePhotoPool(photos, desiredCount) {
-			const result = [];
-			let shuffled = [];
+		function hashSeed(seedText) {
+			let hash = 2166136261;
 
-			while (result.length < desiredCount) {
-				if (shuffled.length === 0) {
-					shuffled = shuffleArray(photos);
-				}
+			for (let index = 0; index < seedText.length; index++) {
+				hash ^= seedText.charCodeAt(index);
+				hash = Math.imul(hash, 16777619);
+			}
 
-				result.push(shuffled.pop());
+			return hash >>> 0;
+		}
+
+		function createSeededRandom(seedText) {
+			let state = hashSeed(seedText) || 0x6d2b79f5;
+
+			return function seededRandom() {
+				state += 0x6d2b79f5;
+				let value = state;
+				value = Math.imul(value ^ (value >>> 15), value | 1);
+				value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+				return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+			};
+		}
+
+		function seededShuffle(items, random) {
+			const result = [...items];
+
+			for (let index = result.length - 1; index > 0; index--) {
+				const swapIndex = Math.floor(random() * (index + 1));
+				[result[index], result[swapIndex]] =
+					[result[swapIndex], result[index]];
 			}
 
 			return result;
 		}
 
-		function createRowPartitions(itemCount, rowCount, minSize, maxSize) {
-			const results = [];
+		function createRandomSeed() {
+			return String(
+				Math.floor(Math.random() * 900000000) + 100000000
+			);
+		}
 
-			function walk(remainingItems, remainingRows, current) {
-				if (remainingRows === 0) {
-					if (remainingItems === 0) {
-						results.push([...current]);
+		function clampInteger(value, minimum, maximum, fallback) {
+			const parsed = Number.parseInt(value, 10);
+
+			if (!Number.isFinite(parsed)) {
+				return fallback;
+			}
+
+			return Math.min(maximum, Math.max(minimum, parsed));
+		}
+
+		function getGeneratorOptions() {
+			const availableCount = galleryImages.length;
+			const randomMode = randomCountEnabled.checked;
+
+			let minimum = clampInteger(
+				minimumPhotoCount.value,
+				1,
+				availableCount,
+				Math.min(15, availableCount)
+			);
+
+			let maximum = clampInteger(
+				maximumPhotoCount.value,
+				1,
+				availableCount,
+				Math.min(20, availableCount)
+			);
+
+			if (minimum > maximum) {
+				[minimum, maximum] = [maximum, minimum];
+			}
+
+			const fixed = clampInteger(
+				fixedPhotoCount.value,
+				1,
+				availableCount,
+				Math.min(18, availableCount)
+			);
+
+			let seed = wallpaperSeed.value.trim();
+
+			if (!seed) {
+				seed = createRandomSeed();
+				wallpaperSeed.value = seed;
+			}
+
+			const random = createSeededRandom(seed);
+			const count = randomMode
+				? minimum + Math.floor(random() * (maximum - minimum + 1))
+				: fixed;
+
+			return {
+				count,
+				seed,
+				random
+			};
+		}
+
+		function createRowPartitions(itemCount, rowCount, minimum, maximum) {
+			const partitions = [];
+
+			function visit(remaining, rowsLeft, current) {
+				if (rowsLeft === 0) {
+					if (remaining === 0) {
+						partitions.push([...current]);
 					}
 
 					return;
 				}
 
-				const smallestPossible = remainingRows * minSize;
-				const largestPossible = remainingRows * maxSize;
+				for (let size = minimum; size <= maximum; size++) {
+					const nextRemaining = remaining - size;
 
-				if (
-					remainingItems < smallestPossible ||
-					remainingItems > largestPossible
-				) {
-					return;
-				}
+					if (
+						nextRemaining < (rowsLeft - 1) * minimum ||
+						nextRemaining > (rowsLeft - 1) * maximum
+					) {
+						continue;
+					}
 
-				for (let size = minSize; size <= maxSize; size++) {
 					current.push(size);
-					walk(
-						remainingItems - size,
-						remainingRows - 1,
-						current
-					);
+					visit(nextRemaining, rowsLeft - 1, current);
 					current.pop();
 				}
 			}
 
-			walk(itemCount, rowCount, []);
-			return results;
+			visit(itemCount, rowCount, []);
+			return partitions;
 		}
 
-		function scoreJustifiedCandidate(
+		function evaluateLayout(
 			photos,
 			rowSizes,
 			usableWidth,
-			usableHeight
+			usableHeight,
+			horizontalGap
 		) {
-			/*
-				Solve for one shared gap size that makes all justified rows fill
-				the exact wallpaper height.
-
-				For each row:
-				height = (usableWidth - gap × spaces) / totalAspectRatio
-
-				This keeps every image proportional and makes every row fill the
-				full width without stretching the last image.
-			*/
 			const rows = [];
 			let photoIndex = 0;
-			let heightWithoutHorizontalGaps = 0;
-			let horizontalGapCoefficient = 0;
+			let imageHeightTotal = 0;
+			let balancePenalty = 0;
+			let previousHeight = null;
 
 			for (const rowSize of rowSizes) {
 				const rowPhotos = photos.slice(
 					photoIndex,
 					photoIndex + rowSize
 				);
-
 				photoIndex += rowSize;
 
 				const ratioTotal = rowPhotos.reduce(
@@ -1783,268 +2019,135 @@
 					return null;
 				}
 
-				heightWithoutHorizontalGaps += usableWidth / ratioTotal;
-				horizontalGapCoefficient +=
-					(rowSize - 1) / ratioTotal;
-
-				rows.push({
-					photos: rowPhotos,
-					ratioTotal,
-					height: 0
-				});
-			}
-
-			/*
-				Use the same gap horizontally and vertically. Solving this
-				equation makes the complete layout reach exactly 2560 × 1440.
-			*/
-			const verticalGapCount = Math.max(0, rows.length - 1);
-			const denominator =
-				horizontalGapCoefficient - verticalGapCount;
-
-			let gap;
-
-			if (Math.abs(denominator) < 0.000001) {
-				gap = 8;
-			} else {
-				gap =
-					(heightWithoutHorizontalGaps - usableHeight) /
-					denominator;
-			}
-
-			if (!Number.isFinite(gap)) {
-				return null;
-			}
-
-			/*
-				Only accept visually reasonable spacing. This prevents giant
-				white gutters or images touching each other.
-			*/
-			if (gap < 2 || gap > 24) {
-				return null;
-			}
-
-			let totalHeight = gap * verticalGapCount;
-			let sizePenalty = 0;
-			let balancePenalty = 0;
-			let previousHeight = null;
-
-			for (const row of rows) {
-				row.height =
+				const height =
 					(
 						usableWidth -
-						gap * (row.photos.length - 1)
+						horizontalGap * (rowSize - 1)
 					) /
-					row.ratioTotal;
+					ratioTotal;
 
-				if (!Number.isFinite(row.height) || row.height <= 0) {
+				if (!Number.isFinite(height) || height <= 0) {
 					return null;
 				}
 
-				totalHeight += row.height;
-
-				/*
-					Prefer large photos. These are soft penalties rather than
-					hard failures, so generation still works with unusual folders.
-				*/
-				if (row.height < 230) {
-					sizePenalty += (230 - row.height) * 8;
-				}
-
-				if (row.height > 410) {
-					sizePenalty += (row.height - 410) * 5;
-				}
-
 				if (previousHeight !== null) {
-					balancePenalty += Math.abs(
-						row.height - previousHeight
-					);
+					balancePenalty += Math.abs(height - previousHeight);
 				}
 
-				previousHeight = row.height;
+				previousHeight = height;
+				imageHeightTotal += height;
+				rows.push({ photos: rowPhotos, height });
 			}
 
-			const heightError = Math.abs(totalHeight - usableHeight);
+			/*
+				The images must fit completely inside the canvas. Any remaining
+				height becomes evenly distributed vertical spacing, so the final
+				row can never be clipped.
+			*/
+			const verticalSpace = usableHeight - imageHeightTotal;
+
+			if (verticalSpace < 0) {
+				return null;
+			}
+
+			const verticalGap = verticalSpace / (rows.length + 1);
+
+			/*
+				Prefer layouts that use the height efficiently, have moderate
+				spacing, and keep neighboring row heights balanced.
+			*/
+			const spacingPenalty =
+				Math.abs(verticalGap - horizontalGap) * 5;
+
+			const unusedPenalty = verticalGap * 0.8;
 
 			return {
 				rows,
-				gap,
-				totalHeight,
+				horizontalGap,
+				verticalGap,
 				score:
-					heightError * 1000 +
-					sizePenalty +
-					balancePenalty * 0.25
+					spacingPenalty +
+					unusedPenalty +
+					balancePenalty * 0.15
 			};
 		}
 
-		function buildJustifiedWallpaperRows(photos, canvasWidth, canvasHeight) {
+		function buildJustifiedWallpaperRows(
+			photos,
+			canvasWidth,
+			canvasHeight,
+			options
+		) {
 			const horizontalPadding = 8;
-			const verticalPadding = 8;
+			const verticalPadding = 0;
 			const usableWidth = canvasWidth - horizontalPadding * 2;
-			const usableHeight = canvasHeight - verticalPadding * 2;
+			const usableHeight = canvasHeight;
+			const horizontalGap = 8;
+			const selected = seededShuffle(photos, options.random).slice(
+				0,
+				options.count
+			);
 
-			/*
-				Use 15–20 images when the folder has enough. With a smaller
-				folder, use each available image and still produce a result.
-			*/
-			const minimumCount =
-				photos.length >= 15 ? 15 : Math.max(1, photos.length);
-
-			const maximumCount =
-				photos.length >= 15
-					? Math.min(20, photos.length)
-					: Math.max(1, photos.length);
-
-			let bestCandidate = null;
+			let best = null;
+			const minimumRows = Math.max(2, Math.floor(options.count / 6));
+			const maximumRows = Math.min(7, Math.ceil(options.count / 2));
 
 			for (
-				let desiredCount = minimumCount;
-				desiredCount <= maximumCount;
-				desiredCount++
+				let rowCount = minimumRows;
+				rowCount <= maximumRows;
+				rowCount++
 			) {
-				/*
-					Choose a sensible number of rows for the amount of photos.
-					Four or five rows are preferred for 15–20 photos.
-				*/
-				const possibleRowCounts =
-					desiredCount >= 15
-						? [4, 5]
-						: Array.from(
-							{
-								length: Math.max(
-									1,
-									Math.min(5, desiredCount) -
-									Math.max(1, Math.ceil(desiredCount / 6)) +
-									1
-								)
-							},
-							(_, index) =>
-								Math.max(1, Math.ceil(desiredCount / 6)) +
-								index
-						);
+				const partitions = createRowPartitions(
+					options.count,
+					rowCount,
+					2,
+					6
+				);
 
-				for (const rowCount of possibleRowCounts) {
-					const minimumPerRow = desiredCount >= 8 ? 2 : 1;
-					const maximumPerRow = 6;
+				for (const partition of partitions) {
+					/*
+						Test several deterministic photo orders for this seed.
+					*/
+					for (let attempt = 0; attempt < 90; attempt++) {
+						const order =
+							attempt === 0
+								? selected
+								: seededShuffle(selected, options.random);
 
-					const partitions = createRowPartitions(
-						desiredCount,
-						rowCount,
-						minimumPerRow,
-						maximumPerRow
-					);
-
-					if (partitions.length === 0) {
-						continue;
-					}
-
-					for (let attempt = 0; attempt < 500; attempt++) {
-						const selectedPhotos = shuffleArray(
-							makePhotoPool(photos, desiredCount)
-						);
-
-						const partition =
-							partitions[
-								Math.floor(Math.random() * partitions.length)
-							];
-
-						const candidate = scoreJustifiedCandidate(
-							selectedPhotos,
+						const candidate = evaluateLayout(
+							order,
 							partition,
 							usableWidth,
-							usableHeight
+							usableHeight,
+							horizontalGap
 						);
 
 						if (
 							candidate &&
-							(
-								!bestCandidate ||
-								candidate.score < bestCandidate.score
-							)
+							(!best || candidate.score < best.score)
 						) {
-							bestCandidate = {
-								...candidate,
-								photoCount: desiredCount
-							};
+							best = candidate;
 						}
 					}
 				}
 			}
 
-			/*
-				Fallback: use a basic proportional grid instead of failing.
-				This path is mainly for extremely unusual image ratios.
-			*/
-			if (!bestCandidate) {
-				const desiredCount = Math.min(
-					Math.max(1, photos.length),
-					20
+			if (!best) {
+				throw new Error(
+					"The selected photo count cannot fit without cropping. Try fewer photos."
 				);
-
-				const selectedPhotos = makePhotoPool(
-					photos,
-					desiredCount
-				);
-
-				const rowCount = Math.max(
-					1,
-					Math.min(5, Math.round(desiredCount / 4))
-				);
-
-				const baseSize = Math.floor(desiredCount / rowCount);
-				let remainder = desiredCount % rowCount;
-				const rowSizes = [];
-
-				for (let index = 0; index < rowCount; index++) {
-					rowSizes.push(baseSize + (remainder-- > 0 ? 1 : 0));
-				}
-
-				const fallbackGap = 8;
-				const rows = [];
-				let photoIndex = 0;
-
-				for (const rowSize of rowSizes) {
-					const rowPhotos = selectedPhotos.slice(
-						photoIndex,
-						photoIndex + rowSize
-					);
-
-					photoIndex += rowSize;
-
-					const ratioTotal = rowPhotos.reduce(
-						(total, photo) => total + photo.ratio,
-						0
-					);
-
-					rows.push({
-						photos: rowPhotos,
-						height:
-							(
-								usableWidth -
-								fallbackGap * (rowSize - 1)
-							) /
-							ratioTotal
-					});
-				}
-
-				bestCandidate = {
-					rows,
-					gap: fallbackGap,
-					photoCount: desiredCount
-				};
 			}
 
 			return {
-				rows: bestCandidate.rows,
-				gap: bestCandidate.gap,
+				...best,
 				horizontalPadding,
 				verticalPadding,
-				usableWidth,
-				photoCount: bestCandidate.photoCount
+				photoCount: options.count,
+				seed: options.seed
 			};
 		}
 
-		async function renderMosaicWallpaper() {
+		async function renderMosaicWallpaper(options) {
 			const canvas = document.createElement("canvas");
 			canvas.width = 2560;
 			canvas.height = 1440;
@@ -2059,7 +2162,8 @@
 			const layout = buildJustifiedWallpaperRows(
 				galleryImages,
 				canvas.width,
-				canvas.height
+				canvas.height,
+				options
 			);
 
 			const uniquePhotos = [
@@ -2077,7 +2181,7 @@
 				})
 			);
 
-			let y = layout.verticalPadding;
+			let y = layout.verticalGap;
 
 			for (const row of layout.rows) {
 				let x = layout.horizontalPadding;
@@ -2095,10 +2199,10 @@
 						row.height
 					);
 
-					x += width + layout.gap;
+					x += width + layout.horizontalGap;
 				}
 
-				y += row.height + layout.gap;
+				y += row.height + layout.verticalGap;
 			}
 
 			return new Promise((resolve, reject) => {
@@ -2145,7 +2249,10 @@
 			remakeWallpaperButton.textContent = "Generating…";
 
 			try {
-				const blob = await renderMosaicWallpaper();
+				const options = getGeneratorOptions();
+				const blob = await renderMosaicWallpaper(options);
+				previewSeed.textContent =
+					`Seed: ${options.seed} • ${options.count} photos`;
 				showWallpaperPreview(blob);
 			} catch (error) {
 				console.error(error);
@@ -2185,7 +2292,10 @@
 
 		remakeWallpaperButton.addEventListener(
 			"click",
-			generateMosaicBackground
+			() => {
+				wallpaperSeed.value = createRandomSeed();
+				generateMosaicBackground();
+			}
 		);
 
 		closeWallpaperPreviewButton.addEventListener(
@@ -2208,6 +2318,38 @@
 			}
 		});
 
+
+		function updateGeneratorSettingState() {
+			const randomMode = randomCountEnabled.checked;
+
+			fixedCountSetting.classList.toggle(
+				"is-disabled",
+				randomMode
+			);
+			minimumCountSetting.classList.toggle(
+				"is-disabled",
+				!randomMode
+			);
+			maximumCountSetting.classList.toggle(
+				"is-disabled",
+				!randomMode
+			);
+
+			fixedPhotoCount.disabled = randomMode;
+			minimumPhotoCount.disabled = !randomMode;
+			maximumPhotoCount.disabled = !randomMode;
+		}
+
+		randomCountEnabled.addEventListener(
+			"change",
+			updateGeneratorSettingState
+		);
+
+		randomizeSeedButton.addEventListener("click", () => {
+			wallpaperSeed.value = createRandomSeed();
+		});
+
+		updateGeneratorSettingState();
 
 		generateBackgroundButton.addEventListener(
 			"click",
