@@ -3153,6 +3153,8 @@
 								<option value="custom">Custom color</option>
 								<option value="gradient">Gradient</option>
 								<option value="dominant">Photo-based color</option>
+								<option value="blurred">Blurred used photos</option>
+								<option value="transparent">No background (transparent)</option>
 							</select>
 						</div>
 
@@ -3284,7 +3286,34 @@
 			favorites: false
 		};
 
-		Object.assign(savedGeneratorSettings, advancedDefaults);
+		const SETTINGS_STORAGE_KEY = "trollmineWallpaperGeneratorSettingsV2";
+
+		function loadPersistedGeneratorSettings() {
+			try {
+				const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
+				return stored ? JSON.parse(stored) : {};
+			} catch (error) {
+				console.warn("Could not load saved generator settings.", error);
+				return {};
+			}
+		}
+
+		function persistGeneratorSettings() {
+			try {
+				localStorage.setItem(
+					SETTINGS_STORAGE_KEY,
+					JSON.stringify(savedGeneratorSettings)
+				);
+			} catch (error) {
+				console.warn("Could not save generator settings.", error);
+			}
+		}
+
+		Object.assign(
+			savedGeneratorSettings,
+			advancedDefaults,
+			loadPersistedGeneratorSettings()
+		);
 
 		let generatedChoices = [];
 		let selectedChoiceIndex = 0;
@@ -3360,6 +3389,7 @@
 
 			originalSaveGeneratorSettings();
 			Object.assign(savedGeneratorSettings, advancedValues);
+			persistGeneratorSettings();
 		};
 
 		// Replace old settings listeners so the overridden functions are used.
@@ -3441,11 +3471,41 @@
 			}
 
 			if (savedGeneratorSettings.advancedEnabled && savedGeneratorSettings.avoidSimilar) {
-				normal.sort((first, second) => {
-					const firstDistance = Math.abs(first.ratio - 1.4);
-					const secondDistance = Math.abs(second.ratio - 1.4);
-					return secondDistance - firstDistance;
-				});
+				const shuffledNormal = seededShuffle(normal, options.random);
+				const diverse = [];
+				let previousRatio = null;
+
+				while (shuffledNormal.length > 0) {
+					let bestIndex = 0;
+
+					if (previousRatio !== null) {
+						let bestDistance = -1;
+
+						for (let index = 0; index < shuffledNormal.length; index++) {
+							const distance = Math.abs(
+								shuffledNormal[index].ratio - previousRatio
+							);
+
+							const randomizedDistance =
+								distance * (0.8 + options.random() * 0.4);
+
+							if (randomizedDistance > bestDistance) {
+								bestDistance = randomizedDistance;
+								bestIndex = index;
+							}
+						}
+					} else {
+						bestIndex = Math.floor(
+							options.random() * shuffledNormal.length
+						);
+					}
+
+					const [nextPhoto] = shuffledNormal.splice(bestIndex, 1);
+					diverse.push(nextPhoto);
+					previousRatio = nextPhoto.ratio;
+				}
+
+				normal.splice(0, normal.length, ...diverse);
 			}
 
 			pool = [...seededShuffle(preferred, options.random), ...normal];
@@ -3481,12 +3541,74 @@
 				? savedGeneratorSettings.background
 				: "white";
 
+			context.save();
+			context.clearRect(0, 0, canvas.width, canvas.height);
+
+			if (style === "transparent") {
+				context.restore();
+				return;
+			}
+
+			if (style === "blurred" && loadedImages.length > 0) {
+				const columns = Math.max(
+					1,
+					Math.ceil(Math.sqrt(loadedImages.length * canvas.width / canvas.height))
+				);
+
+				const rows = Math.max(
+					1,
+					Math.ceil(loadedImages.length / columns)
+				);
+
+				const cellWidth = canvas.width / columns;
+				const cellHeight = canvas.height / rows;
+
+				context.filter = `blur(${Math.max(28, Math.round(Math.min(canvas.width, canvas.height) * 0.035))}px)`;
+				context.globalAlpha = 0.9;
+
+				for (let index = 0; index < loadedImages.length; index++) {
+					const image = loadedImages[index];
+					const column = index % columns;
+					const row = Math.floor(index / columns);
+					const x = column * cellWidth;
+					const y = row * cellHeight;
+					const scale = Math.max(
+						cellWidth / image.naturalWidth,
+						cellHeight / image.naturalHeight
+					);
+
+					const drawWidth = image.naturalWidth * scale;
+					const drawHeight = image.naturalHeight * scale;
+
+					context.drawImage(
+						image,
+						x + (cellWidth - drawWidth) / 2,
+						y + (cellHeight - drawHeight) / 2,
+						drawWidth,
+						drawHeight
+					);
+				}
+
+				context.filter = "none";
+				context.globalAlpha = 0.2;
+				context.fillStyle = "#000000";
+				context.fillRect(0, 0, canvas.width, canvas.height);
+				context.restore();
+				return;
+			}
+
 			if (style === "black") {
 				context.fillStyle = "#000000";
 			} else if (style === "custom") {
 				context.fillStyle = savedGeneratorSettings.colorOne;
 			} else if (style === "gradient") {
-				const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+				const gradient = context.createLinearGradient(
+					0,
+					0,
+					canvas.width,
+					canvas.height
+				);
+
 				gradient.addColorStop(0, savedGeneratorSettings.colorOne);
 				gradient.addColorStop(1, savedGeneratorSettings.colorTwo);
 				context.fillStyle = gradient;
@@ -3503,6 +3625,7 @@
 			}
 
 			context.fillRect(0, 0, canvas.width, canvas.height);
+			context.restore();
 		}
 
 		function buildGridLayout(photos, width, height, gap) {
@@ -3570,7 +3693,7 @@
 			canvas.width = resolution.width;
 			canvas.height = resolution.height;
 
-			const context = canvas.getContext("2d", { alpha: false });
+			const context = canvas.getContext("2d", { alpha: true });
 			const startedAt = performance.now();
 			const selectedPhotos = selectPhotosForAdvancedGeneration(options);
 			const loadedImageMap = new Map();
@@ -3821,9 +3944,7 @@
 				historyButton.type = "button";
 				historyButton.className = "wallpaper-action";
 				historyButton.textContent = `History (${sessionGenerationHistory.length})`;
-				historyButton.addEventListener("click", () => {
-					showGalleryToast(`${sessionGenerationHistory.length} wallpaper generations saved this session.`);
-				});
+				historyButton.addEventListener("click", openWallpaperHistory);
 				extraActions.appendChild(historyButton);
 			}
 
@@ -3871,7 +3992,12 @@
 				}
 
 				if (savedGeneratorSettings.advancedEnabled && savedGeneratorSettings.history) {
-					sessionGenerationHistory.push(...choices);
+					for (const choice of choices) {
+						sessionGenerationHistory.push({
+							...choice,
+							historyUrl: URL.createObjectURL(choice.blob)
+						});
+					}
 				}
 
 				showAdvancedWallpaperPreview(choices);
@@ -3894,7 +4020,12 @@
 		const oldGenerateButton = document.getElementById("generateBackgroundButton");
 		const newGenerateButton = oldGenerateButton.cloneNode(true);
 		oldGenerateButton.replaceWith(newGenerateButton);
-		newGenerateButton.addEventListener("click", generateAdvancedMosaicBackground);
+		newGenerateButton.addEventListener("click", () => {
+			savedGeneratorSettings.seed = createRandomSeed();
+			wallpaperSeed.value = savedGeneratorSettings.seed;
+			persistGeneratorSettings();
+			generateAdvancedMosaicBackground();
+		});
 
 		const oldRemakeButton = document.getElementById("remakeWallpaperButton");
 		const newRemakeButton = oldRemakeButton.cloneNode(true);
@@ -3983,6 +4114,453 @@
 		});
 
 		updateAdvancedSettingsState();
+	</script>
+
+
+	<style>
+		.settings-code-box {
+			margin-top: 12px;
+			padding: 12px;
+			border-radius: 12px;
+			background: #f4f3fb;
+		}
+
+		.settings-code-box textarea {
+			width: 100%;
+			min-height: 82px;
+			resize: vertical;
+			padding: 10px;
+			border: 1px solid rgba(0, 0, 0, 0.16);
+			border-radius: 10px;
+			background: #ffffff;
+			color: #222222;
+			font: 700 0.76rem/1.45 monospace;
+		}
+
+		.settings-code-actions,
+		.photo-state-actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			margin-top: 9px;
+		}
+
+		.small-settings-button {
+			padding: 8px 11px;
+			border: 0;
+			border-radius: 9px;
+			background: #765fe7;
+			color: #ffffff;
+			font: inherit;
+			font-size: 0.75rem;
+			font-weight: 850;
+			cursor: pointer;
+		}
+
+		.small-settings-button.secondary {
+			background: #e7e4f8;
+			color: #3e3470;
+		}
+
+		.history-overlay {
+			position: fixed;
+			inset: 0;
+			z-index: 2500;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			padding: 20px;
+			background: rgba(0, 0, 0, 0.7);
+		}
+
+		.history-overlay.visible {
+			display: flex;
+		}
+
+		.history-card {
+			width: min(980px, 96vw);
+			max-height: 88vh;
+			overflow: auto;
+			padding: 18px;
+			border-radius: 18px;
+			background: #ffffff;
+		}
+
+		.history-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			margin-bottom: 14px;
+		}
+
+		.history-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 12px;
+		}
+
+		.history-item {
+			overflow: hidden;
+			border: 1px solid rgba(0, 0, 0, 0.12);
+			border-radius: 12px;
+			background: #f5f5f5;
+		}
+
+		.history-item img {
+			display: block;
+			width: 100%;
+			aspect-ratio: 16 / 9;
+			object-fit: contain;
+			background:
+				linear-gradient(45deg, #dddddd 25%, transparent 25%),
+				linear-gradient(-45deg, #dddddd 25%, transparent 25%),
+				linear-gradient(45deg, transparent 75%, #dddddd 75%),
+				linear-gradient(-45deg, transparent 75%, #dddddd 75%);
+			background-size: 18px 18px;
+			background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+		}
+
+		.history-item-footer {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+			padding: 9px;
+			font-size: 0.72rem;
+			font-weight: 800;
+		}
+
+		.gallery-item .photo-state-actions {
+			position: absolute;
+			right: 8px;
+			bottom: 8px;
+			z-index: 5;
+			display: flex;
+			margin: 0;
+			opacity: 0;
+			transform: translateY(4px);
+			transition: opacity 150ms ease, transform 150ms ease;
+		}
+
+		.gallery-item:hover .photo-state-actions {
+			opacity: 1;
+			transform: translateY(0);
+		}
+
+		.photo-state-button {
+			width: 34px;
+			height: 34px;
+			padding: 0;
+			border: 0;
+			border-radius: 9px;
+			background: rgba(0, 0, 0, 0.72);
+			color: #ffffff;
+			font-size: 1rem;
+			cursor: pointer;
+		}
+
+		@media (max-width: 620px) {
+			.history-grid {
+				grid-template-columns: 1fr;
+			}
+
+			.gallery-item .photo-state-actions {
+				opacity: 1;
+				transform: none;
+			}
+		}
+	</style>
+
+	<div id="wallpaperHistoryOverlay" class="history-overlay" aria-hidden="true">
+		<div class="history-card">
+			<div class="history-header">
+				<div>
+					<h2 style="margin:0;">Generation history</h2>
+					<p id="wallpaperHistoryCount" style="margin:4px 0 0;color:#666666;font-size:.8rem;font-weight:700;"></p>
+				</div>
+				<button id="closeWallpaperHistory" class="small-settings-button secondary" type="button">Close</button>
+			</div>
+			<div id="wallpaperHistoryGrid" class="history-grid"></div>
+		</div>
+	</div>
+
+	<script>
+		const settingsCodeMarkup = `
+			<div class="settings-code-box">
+				<p class="generator-section-title" style="margin-bottom:5px;">Settings code</p>
+				<p class="generator-settings-description">Copy this code to share every generator setting with a friend.</p>
+				<textarea id="settingsCodeText" spellcheck="false" placeholder="Generate or paste a settings code here"></textarea>
+				<div class="settings-code-actions">
+					<button id="generateSettingsCodeButton" class="small-settings-button" type="button">Generate code</button>
+					<button id="copySettingsCodeButton" class="small-settings-button secondary" type="button">Copy</button>
+					<button id="applySettingsCodeButton" class="small-settings-button secondary" type="button">Apply code</button>
+				</div>
+			</div>
+		`;
+
+		advancedElements.body.insertAdjacentHTML(
+			"beforeend",
+			settingsCodeMarkup
+		);
+
+		const settingsCodeText = document.getElementById("settingsCodeText");
+		const wallpaperHistoryOverlay = document.getElementById("wallpaperHistoryOverlay");
+		const wallpaperHistoryGrid = document.getElementById("wallpaperHistoryGrid");
+		const wallpaperHistoryCount = document.getElementById("wallpaperHistoryCount");
+
+		function encodeSettingsCode(settings) {
+			const json = JSON.stringify(settings);
+			const bytes = new TextEncoder().encode(json);
+			let binary = "";
+
+			for (const byte of bytes) {
+				binary += String.fromCharCode(byte);
+			}
+
+			return `TMG2-${btoa(binary)}`;
+		}
+
+		function decodeSettingsCode(code) {
+			const cleanCode = code.trim();
+
+			if (!cleanCode.startsWith("TMG2-")) {
+				throw new Error("This is not a valid TMG2 settings code.");
+			}
+
+			const binary = atob(cleanCode.slice(5));
+			const bytes = Uint8Array.from(
+				binary,
+				character => character.charCodeAt(0)
+			);
+
+			return JSON.parse(new TextDecoder().decode(bytes));
+		}
+
+		function applySettingsToControls(settings) {
+			Object.assign(savedGeneratorSettings, advancedDefaults, settings);
+			persistGeneratorSettings();
+			openGeneratorSettings();
+		}
+
+		document.getElementById("generateSettingsCodeButton").addEventListener("click", () => {
+			saveGeneratorSettings();
+			settingsCodeText.value = encodeSettingsCode(savedGeneratorSettings);
+			openGeneratorSettings();
+			settingsCodeText.focus();
+			settingsCodeText.select();
+		});
+
+		document.getElementById("copySettingsCodeButton").addEventListener("click", async () => {
+			if (!settingsCodeText.value.trim()) {
+				settingsCodeText.value = encodeSettingsCode(savedGeneratorSettings);
+			}
+
+			try {
+				await navigator.clipboard.writeText(settingsCodeText.value.trim());
+				showGalleryToast("Settings code copied.");
+			} catch (error) {
+				settingsCodeText.focus();
+				settingsCodeText.select();
+				document.execCommand("copy");
+				showGalleryToast("Settings code copied.");
+			}
+		});
+
+		document.getElementById("applySettingsCodeButton").addEventListener("click", () => {
+			try {
+				const importedSettings = decodeSettingsCode(settingsCodeText.value);
+				applySettingsToControls(importedSettings);
+				showGalleryToast("Settings code applied and saved.");
+			} catch (error) {
+				showGalleryToast(error.message || "The settings code is invalid.");
+			}
+		});
+
+		function openWallpaperHistory() {
+			wallpaperHistoryGrid.replaceChildren();
+			wallpaperHistoryCount.textContent =
+				`${sessionGenerationHistory.length} saved generation${sessionGenerationHistory.length === 1 ? "" : "s"} this session`;
+
+			if (sessionGenerationHistory.length === 0) {
+				const empty = document.createElement("p");
+				empty.textContent = "No generated wallpapers are in the history yet.";
+				empty.style.gridColumn = "1 / -1";
+				empty.style.textAlign = "center";
+				empty.style.padding = "40px";
+				wallpaperHistoryGrid.appendChild(empty);
+			}
+
+			[...sessionGenerationHistory].reverse().forEach((entry, reverseIndex) => {
+				const originalIndex =
+					sessionGenerationHistory.length - 1 - reverseIndex;
+
+				const item = document.createElement("div");
+				item.className = "history-item";
+
+				const image = document.createElement("img");
+				image.src = entry.historyUrl;
+
+				const footer = document.createElement("div");
+				footer.className = "history-item-footer";
+
+				const information = document.createElement("span");
+				information.textContent =
+					`${entry.width}×${entry.height} • ${entry.count} photos`;
+
+				const useButton = document.createElement("button");
+				useButton.type = "button";
+				useButton.className = "small-settings-button";
+				useButton.textContent = "Use";
+				useButton.addEventListener("click", () => {
+					const currentEntry = sessionGenerationHistory[originalIndex];
+
+					showAdvancedWallpaperPreview([{
+						...currentEntry,
+						blob: currentEntry.blob
+					}]);
+
+					closeWallpaperHistory();
+				});
+
+				footer.append(information, useButton);
+				item.append(image, footer);
+				wallpaperHistoryGrid.appendChild(item);
+			});
+
+			wallpaperHistoryOverlay.classList.add("visible");
+			wallpaperHistoryOverlay.setAttribute("aria-hidden", "false");
+		}
+
+		function closeWallpaperHistory() {
+			wallpaperHistoryOverlay.classList.remove("visible");
+			wallpaperHistoryOverlay.setAttribute("aria-hidden", "true");
+		}
+
+		document.getElementById("closeWallpaperHistory").addEventListener(
+			"click",
+			closeWallpaperHistory
+		);
+
+		wallpaperHistoryOverlay.addEventListener("click", event => {
+			if (event.target === wallpaperHistoryOverlay) {
+				closeWallpaperHistory();
+			}
+		});
+
+		function ensurePhotoStateButtons(photo) {
+			if (!photo.element || photo.element.querySelector(".photo-state-actions")) {
+				return;
+			}
+
+			const actions = document.createElement("div");
+			actions.className = "photo-state-actions";
+
+			const preferButton = document.createElement("button");
+			preferButton.type = "button";
+			preferButton.className = "photo-state-button";
+			preferButton.title = "Prefer this photo";
+			preferButton.textContent = "★";
+
+			const excludeButton = document.createElement("button");
+			excludeButton.type = "button";
+			excludeButton.className = "photo-state-button";
+			excludeButton.title = "Exclude this photo";
+			excludeButton.textContent = "×";
+
+			preferButton.addEventListener("click", event => {
+				event.preventDefault();
+				event.stopPropagation();
+
+				if (excludedPhotos.has(photo)) {
+					excludedPhotos.delete(photo);
+				}
+
+				if (preferredPhotos.has(photo)) {
+					preferredPhotos.delete(photo);
+					showGalleryToast("Photo preference removed.");
+				} else {
+					preferredPhotos.add(photo);
+					showGalleryToast("Photo preferred.");
+				}
+
+				refreshPhotoState(photo);
+			});
+
+			excludeButton.addEventListener("click", event => {
+				event.preventDefault();
+				event.stopPropagation();
+
+				if (excludedPhotos.has(photo)) {
+					excludedPhotos.delete(photo);
+					showGalleryToast("Photo included again.");
+				} else {
+					excludedPhotos.add(photo);
+					preferredPhotos.delete(photo);
+					showGalleryToast("Photo excluded.");
+				}
+
+				refreshPhotoState(photo);
+			});
+
+			actions.append(preferButton, excludeButton);
+			photo.element.appendChild(actions);
+		}
+
+		function refreshAllPhotoStateButtons() {
+			for (const photo of galleryImages) {
+				ensurePhotoStateButtons(photo);
+			}
+		}
+
+		/*
+			Capture phase makes Shift-click work before the gallery's normal
+			click/preview behavior can consume the event.
+		*/
+		galleryGrid.addEventListener("click", event => {
+			if (!event.shiftKey) {
+				return;
+			}
+
+			const item = event.target.closest(".gallery-item");
+
+			if (!item || event.target.closest(".photo-state-actions")) {
+				return;
+			}
+
+			const photo = galleryImages.find(
+				candidate => candidate.element === item
+			);
+
+			if (!photo || excludedPhotos.has(photo)) {
+				return;
+			}
+
+			event.preventDefault();
+			event.stopImmediatePropagation();
+
+			if (preferredPhotos.has(photo)) {
+				preferredPhotos.delete(photo);
+				showGalleryToast("Photo preference removed.");
+			} else {
+				preferredPhotos.add(photo);
+				showGalleryToast("Photo preferred.");
+			}
+
+			refreshPhotoState(photo);
+		}, true);
+
+		const photoButtonObserver = new MutationObserver(() => {
+			refreshAllPhotoStateButtons();
+		});
+
+		photoButtonObserver.observe(galleryGrid, {
+			childList: true,
+			subtree: false
+		});
+
+		refreshAllPhotoStateButtons();
+		persistGeneratorSettings();
 	</script>
 
 </body>
