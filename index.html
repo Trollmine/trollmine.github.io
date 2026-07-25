@@ -1097,6 +1097,37 @@
 			pointer-events: none;
 		}
 
+		.gallery-item video {
+			display: block;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			background: #111111;
+			cursor: pointer;
+		}
+
+		.gallery-item.video-playing {
+			box-shadow:
+				0 0 0 3px #58d6ff,
+				0 8px 24px rgba(88, 214, 255, 0.28);
+		}
+
+		.wallpaper-preview-video {
+			display: none;
+			width: 100%;
+			max-height: calc(94vh - 92px);
+			aspect-ratio: 16 / 9;
+			object-fit: contain;
+			border-radius: 10px;
+			background: #111111;
+		}
+
+		.wallpaper-action:disabled {
+			opacity: 0.55;
+			cursor: wait;
+			transform: none;
+		}
+
 		.gallery-empty {
 			position: absolute;
 			top: 50%;
@@ -1333,7 +1364,7 @@
 			<input
 				id="folderInput"
 				type="file"
-				accept="image/*"
+				accept="image/*,video/*"
 				webkitdirectory
 				directory
 				multiple
@@ -1383,7 +1414,7 @@
 							Wallpaper Generator
 						</h2>
 						<p class="generator-settings-description">
-							Choose how many photos the wallpaper should use and
+							Choose how many media items the wallpaper should use and
 							set a seed to recreate the same result later.
 						</p>
 					</div>
@@ -1428,7 +1459,7 @@
 
 					<div class="generator-fields" id="randomCountFields">
 						<div class="generator-field">
-							<label for="minimumPhotoCount">Minimum photos</label>
+							<label for="minimumPhotoCount">Minimum media</label>
 							<input
 								id="minimumPhotoCount"
 								type="number"
@@ -1439,7 +1470,7 @@
 						</div>
 
 						<div class="generator-field">
-							<label for="maximumPhotoCount">Maximum photos</label>
+							<label for="maximumPhotoCount">Maximum media</label>
 							<input
 								id="maximumPhotoCount"
 								type="number"
@@ -1455,7 +1486,7 @@
 						id="fixedCountFields"
 					>
 						<div class="generator-field">
-							<label for="fixedPhotoCount">Number of photos</label>
+							<label for="fixedPhotoCount">Number of media items</label>
 							<input
 								id="fixedPhotoCount"
 								type="number"
@@ -1524,7 +1555,7 @@
 				<div class="gallery-empty-icon">▦</div>
 				<h2>Your gallery is empty</h2>
 				<p>
-					Choose a folder containing images. They stay on your device
+					Choose a folder containing images and videos. They stay on your device
 					and are not uploaded anywhere.
 				</p>
 			</div>
@@ -1540,6 +1571,15 @@
 					alt="Generated mosaic wallpaper preview"
 				>
 
+				<video
+					class="wallpaper-preview-video"
+					id="wallpaperPreviewVideo"
+					controls
+					loop
+					muted
+					playsinline
+				></video>
+
 				<p class="preview-seed" id="previewSeed"></p>
 
 				<div class="wallpaper-preview-actions">
@@ -1549,6 +1589,24 @@
 						type="button"
 					>
 						Download
+					</button>
+
+					<button
+						class="wallpaper-action"
+						id="previewVideoWallpaperButton"
+						type="button"
+						hidden
+					>
+						Preview Video
+					</button>
+
+					<button
+						class="wallpaper-action"
+						id="exportVideoWallpaperButton"
+						type="button"
+						hidden
+					>
+						Export WebM
 					</button>
 
 					<button
@@ -1757,6 +1815,12 @@
 		const wallpaperPreview = document.getElementById("wallpaperPreview");
 		const wallpaperPreviewImage =
 			document.getElementById("wallpaperPreviewImage");
+		const wallpaperPreviewVideo =
+			document.getElementById("wallpaperPreviewVideo");
+		const previewVideoWallpaperButton =
+			document.getElementById("previewVideoWallpaperButton");
+		const exportVideoWallpaperButton =
+			document.getElementById("exportVideoWallpaperButton");
 		const downloadWallpaperButton =
 			document.getElementById("downloadWallpaperButton");
 		const remakeWallpaperButton =
@@ -1924,6 +1988,20 @@
 			].includes(extension);
 		}
 
+
+		function isVideoFile(file) {
+			if (file.type.startsWith("video/")) {
+				return true;
+			}
+
+			const extension = file.name.split(".").pop().toLowerCase();
+			return ["mp4", "webm", "mov", "m4v", "ogv", "ogg"].includes(extension);
+		}
+
+		function isMediaFile(file) {
+			return isImageFile(file) || isVideoFile(file);
+		}
+
 		function readFileAsDataURL(file) {
 			return new Promise((resolve, reject) => {
 				const reader = new FileReader();
@@ -1957,9 +2035,56 @@
 			});
 		}
 
+
+		function measureVideo(source, file) {
+			return new Promise((resolve, reject) => {
+				const video = document.createElement("video");
+				video.preload = "metadata";
+				video.muted = true;
+				video.playsInline = true;
+
+				video.addEventListener("loadedmetadata", () => {
+					if (!video.videoWidth || !video.videoHeight) {
+						reject(new Error(`Could not read ${file.name}`));
+						return;
+					}
+
+					resolve({
+						file,
+						src: source,
+						objectUrl: source,
+						type: "video",
+						width: video.videoWidth,
+						height: video.videoHeight,
+						ratio: video.videoWidth / video.videoHeight,
+						duration: Number.isFinite(video.duration) ? video.duration : 0
+					});
+				}, { once: true });
+
+				video.addEventListener("error", () => {
+					reject(new Error(`The browser could not decode ${file.name}`));
+				}, { once: true });
+
+				video.src = source;
+			});
+		}
+
 		async function loadGalleryImage(file) {
+			if (isVideoFile(file)) {
+				const objectUrl = URL.createObjectURL(file);
+
+				try {
+					return await measureVideo(objectUrl, file);
+				} catch (error) {
+					URL.revokeObjectURL(objectUrl);
+					throw error;
+				}
+			}
+
 			const dataUrl = await readFileAsDataURL(file);
-			return measureImage(dataUrl, file);
+			const image = await measureImage(dataUrl, file);
+			image.type = "image";
+			return image;
 		}
 
 		function applyGalleryTransform() {
@@ -1990,35 +2115,77 @@
 				saveMediaStates();
 			}
 
-			const image = document.createElement("img");
-			image.src = photo.src;
-			image.alt = photo.file.name;
-			image.draggable = false;
+			let mediaElement;
+
+			if (photo.type === "video") {
+				mediaElement = document.createElement("video");
+				mediaElement.src = photo.src;
+				mediaElement.preload = "metadata";
+				mediaElement.muted = true;
+				mediaElement.loop = true;
+				mediaElement.playsInline = true;
+				mediaElement.draggable = false;
+				mediaElement.title = "Click to play or pause";
+
+				mediaElement.addEventListener("play", () => {
+					item.classList.add("video-playing");
+				});
+
+				mediaElement.addEventListener("pause", () => {
+					item.classList.remove("video-playing");
+				});
+			} else {
+				mediaElement = document.createElement("img");
+				mediaElement.src = photo.src;
+				mediaElement.alt = photo.file.name;
+				mediaElement.draggable = false;
+			}
 
 			const caption = document.createElement("figcaption");
 			caption.className = "gallery-file-name";
 			caption.textContent = mediaPath;
 
-			item.appendChild(image);
+			item.appendChild(mediaElement);
 			item.appendChild(caption);
 
-			item.addEventListener("click", event => {
-				if (!event.shiftKey && !event.ctrlKey) {
+			item.addEventListener("click", async event => {
+				if (event.shiftKey || event.ctrlKey) {
+					event.preventDefault();
+					event.stopPropagation();
+
+					if (event.ctrlKey) {
+						toggleDisabledMedia(photo);
+					} else {
+						toggleFavoriteMedia(photo);
+					}
+
+					return;
+				}
+
+				if (photo.type !== "video") {
 					return;
 				}
 
 				event.preventDefault();
 				event.stopPropagation();
 
-				if (event.ctrlKey) {
-					toggleDisabledMedia(photo);
-					return;
-				}
+				if (mediaElement.paused) {
+					for (const video of galleryGrid.querySelectorAll("video")) {
+						if (video !== mediaElement) {
+							video.pause();
+						}
+					}
 
-				toggleFavoriteMedia(photo);
+					await mediaElement.play().catch(() => {
+						showGalleryToast("This video could not be played by the browser.");
+					});
+				} else {
+					mediaElement.pause();
+				}
 			});
 
 			photo.element = item;
+			photo.mediaElement = mediaElement;
 			updateMediaStateAppearance(photo);
 			return item;
 		}
@@ -2097,11 +2264,17 @@
 		}
 
 		folderInput.addEventListener("change", async () => {
+			for (const media of galleryImages) {
+				if (media.objectUrl) {
+					URL.revokeObjectURL(media.objectUrl);
+				}
+			}
+
 			galleryGrid.replaceChildren();
 			galleryImages = [];
 
 			const imageFiles = Array.from(folderInput.files)
-				.filter(isImageFile)
+				.filter(isMediaFile)
 				.sort((firstFile, secondFile) =>
 					firstFile.name.localeCompare(secondFile.name, undefined, {
 						numeric: true,
@@ -2118,7 +2291,7 @@
 			galleryEmpty.style.display = "block";
 			galleryEmpty.querySelector("h2").textContent = "Loading gallery…";
 			galleryEmpty.querySelector("p").textContent =
-				`Reading ${imageFiles.length} image${imageFiles.length === 1 ? "" : "s"} from your folder.`;
+				`Reading ${imageFiles.length} media item${imageFiles.length === 1 ? "" : "s"} from your folder.`;
 
 			const loaded = await Promise.allSettled(
 				imageFiles.map(loadGalleryImage)
@@ -2130,9 +2303,9 @@
 
 			if (galleryImages.length === 0) {
 				galleryEmpty.querySelector("h2").textContent =
-					"No readable images found";
+					"No readable media found";
 				galleryEmpty.querySelector("p").textContent =
-					"Try JPG, PNG, WebP, GIF or another browser-supported image format.";
+					"Try JPG, PNG, WebP, MP4, WebM or another browser-supported media format.";
 				resetGalleryView();
 				return;
 			}
@@ -2239,6 +2412,14 @@
 			return shuffled;
 		}
 
+		function getRenderableWidth(media) {
+			return media.videoWidth || media.naturalWidth || media.width || 1;
+		}
+
+		function getRenderableHeight(media) {
+			return media.videoHeight || media.naturalHeight || media.height || 1;
+		}
+
 		function drawImageContain(context, image, x, y, width, height) {
 			/*
 				Fit the entire image inside the available rectangle.
@@ -2246,7 +2427,7 @@
 				Nothing is cropped or stretched. The original width/height
 				ratio is always preserved, and any unused space stays white.
 			*/
-			const sourceRatio = image.naturalWidth / image.naturalHeight;
+			const sourceRatio = getRenderableWidth(image) / getRenderableHeight(image);
 			const targetRatio = width / height;
 
 			let drawWidth;
@@ -2280,6 +2461,63 @@
 				image.onerror = reject;
 				image.src = source;
 			});
+		}
+
+		function loadCanvasVideo(source) {
+			return new Promise((resolve, reject) => {
+				const video = document.createElement("video");
+				let settled = false;
+
+				const finish = () => {
+					if (settled || video.readyState < 2) {
+						return;
+					}
+
+					settled = true;
+					resolve(video);
+				};
+
+				video.preload = "auto";
+				video.muted = true;
+				video.defaultMuted = true;
+				video.loop = true;
+				video.playsInline = true;
+
+				video.addEventListener("loadeddata", async () => {
+					try {
+						if (Number.isFinite(video.duration) && video.duration > 0.1) {
+							video.currentTime = Math.min(0.25, video.duration * 0.08);
+
+							await new Promise(done => {
+								const timeout = setTimeout(done, 700);
+								video.addEventListener("seeked", () => {
+									clearTimeout(timeout);
+									done();
+								}, { once: true });
+							});
+						}
+					} finally {
+						finish();
+					}
+				}, { once: true });
+
+				video.addEventListener("canplay", finish, { once: true });
+				video.addEventListener("error", () => {
+					if (!settled) {
+						settled = true;
+						reject(new Error("A selected video could not be decoded."));
+					}
+				}, { once: true });
+
+				video.src = source;
+				video.load();
+			});
+		}
+
+		function loadCanvasMedia(photo) {
+			return photo.type === "video"
+				? loadCanvasVideo(photo.src)
+				: loadCanvasImage(photo.src);
 		}
 
 		let generatedWallpaperBlob = null;
@@ -2701,7 +2939,7 @@
 
 			await Promise.all(
 				uniquePhotos.map(async photo => {
-					const loadedImage = await loadCanvasImage(photo.src);
+					const loadedImage = await loadCanvasMedia(photo);
 					loadedImageMap.set(photo, loadedImage);
 				})
 			);
@@ -2733,6 +2971,10 @@
 		}
 
 		function closeWallpaperPreview() {
+			if (typeof stopAnimatedWallpaperPreview === "function") {
+				stopAnimatedWallpaperPreview();
+			}
+
 			wallpaperPreview.classList.remove("visible");
 			wallpaperPreview.setAttribute("aria-hidden", "true");
 		}
@@ -2770,7 +3012,7 @@
 				const options = getGeneratorOptions();
 				const blob = await renderMosaicWallpaper(options);
 				previewSeed.textContent =
-					`Seed: ${options.seed} • ${options.count} photos`;
+					`Seed: ${options.seed} • ${options.count} media`;
 				showWallpaperPreview(blob);
 			} catch (error) {
 				console.error(error);
@@ -3023,6 +3265,18 @@
 		window.addEventListener("beforeunload", () => {
 			if (generatedWallpaperUrl) {
 				URL.revokeObjectURL(generatedWallpaperUrl);
+			}
+
+			for (const media of galleryImages) {
+				if (media.objectUrl) {
+					URL.revokeObjectURL(media.objectUrl);
+				}
+			}
+
+			for (const choice of generatedChoices || []) {
+				if (choice.animatedUrl) {
+					URL.revokeObjectURL(choice.animatedUrl);
+				}
 			}
 		});
 
@@ -3760,12 +4014,12 @@
 					const x = column * cellWidth;
 					const y = row * cellHeight;
 					const scale = Math.max(
-						cellWidth / image.naturalWidth,
-						cellHeight / image.naturalHeight
+						cellWidth / getRenderableWidth(image),
+						cellHeight / getRenderableHeight(image)
 					);
 
-					const drawWidth = image.naturalWidth * scale;
-					const drawHeight = image.naturalHeight * scale;
+					const drawWidth = getRenderableWidth(image) * scale;
+					const drawHeight = getRenderableHeight(image) * scale;
 
 					context.drawImage(
 						image,
@@ -3887,7 +4141,7 @@
 
 			await Promise.all(
 				selectedPhotos.map(async photo => {
-					loadedImageMap.set(photo, await loadCanvasImage(photo.src));
+					loadedImageMap.set(photo, await loadCanvasMedia(photo));
 				})
 			);
 
@@ -3935,6 +4189,7 @@
 			const borderStyle = advanced ? savedGeneratorSettings.border : "none";
 			const radius = advanced ? savedGeneratorSettings.radius : 0;
 			const shadowEnabled = advanced && savedGeneratorSettings.shadow;
+			const videoRegions = [];
 
 			for (const leaf of leaves) {
 				const image = loadedImageMap.get(leaf.photo);
@@ -3990,6 +4245,19 @@
 				}
 
 				context.restore();
+
+				if (leaf.photo.type === "video") {
+					videoRegions.push({
+						photo: leaf.photo,
+						x,
+						y,
+						width,
+						height,
+						radius,
+						contain: Boolean(leaf.contain)
+					});
+				}
+
 				recentlyUsedPhotos.add(leaf.photo);
 			}
 
@@ -4009,14 +4277,246 @@
 				width: canvas.width,
 				height: canvas.height,
 				layout: layoutMode,
-				generationTime
+				generationTime,
+				hasVideos: videoRegions.length > 0,
+				videoRegions
 			};
 		}
+
+
+		function getSupportedVideoMimeType() {
+			const candidates = [
+				"video/webm;codecs=vp9",
+				"video/webm;codecs=vp8",
+				"video/webm"
+			];
+
+			return candidates.find(type => MediaRecorder.isTypeSupported(type)) || "";
+		}
+
+		function roundedClip(context, region) {
+			roundedRectanglePath(
+				context,
+				region.x,
+				region.y,
+				region.width,
+				region.height,
+				region.radius
+			);
+			context.clip();
+		}
+
+		async function createAnimatedWallpaper(choice) {
+			if (!choice || !choice.hasVideos || choice.videoRegions.length === 0) {
+				throw new Error("This wallpaper does not contain any videos.");
+			}
+
+			if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
+				throw new Error("This browser does not support WebM canvas recording.");
+			}
+
+			const mimeType = getSupportedVideoMimeType();
+
+			if (!mimeType) {
+				throw new Error("This browser cannot export a supported WebM format.");
+			}
+
+			const canvas = document.createElement("canvas");
+			canvas.width = choice.width;
+			canvas.height = choice.height;
+			const context = canvas.getContext("2d", { alpha: true });
+			const baseImage = await loadCanvasImage(choice.url);
+			const loadedVideos = new Map();
+
+			await Promise.all(
+				[...new Set(choice.videoRegions.map(region => region.photo))].map(async photo => {
+					const video = await loadCanvasVideo(photo.src);
+					video.currentTime = 0;
+					loadedVideos.set(photo, video);
+				})
+			);
+
+			const stream = canvas.captureStream(30);
+			const recorder = new MediaRecorder(stream, {
+				mimeType,
+				videoBitsPerSecond: 12000000
+			});
+
+			const chunks = [];
+			recorder.addEventListener("dataavailable", event => {
+				if (event.data && event.data.size > 0) {
+					chunks.push(event.data);
+				}
+			});
+
+			const stopped = new Promise((resolve, reject) => {
+				recorder.addEventListener("stop", resolve, { once: true });
+				recorder.addEventListener("error", () => {
+					reject(new Error("The browser failed while recording the video wallpaper."));
+				}, { once: true });
+			});
+
+			for (const video of loadedVideos.values()) {
+				video.loop = true;
+				video.muted = true;
+				await video.play().catch(() => {});
+			}
+
+			recorder.start(250);
+			const durationMilliseconds = 6000;
+			const startedAt = performance.now();
+
+			await new Promise(resolve => {
+				function drawFrame(now) {
+					context.clearRect(0, 0, canvas.width, canvas.height);
+					context.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
+
+					for (const region of choice.videoRegions) {
+						const video = loadedVideos.get(region.photo);
+
+						if (!video || video.readyState < 2) {
+							continue;
+						}
+
+						context.save();
+						roundedClip(context, region);
+
+						if (region.contain) {
+							drawImageContain(
+								context,
+								video,
+								region.x,
+								region.y,
+								region.width,
+								region.height
+							);
+						} else {
+							context.drawImage(
+								video,
+								region.x,
+								region.y,
+								region.width,
+								region.height
+							);
+						}
+
+						context.restore();
+					}
+
+					if (now - startedAt >= durationMilliseconds) {
+						resolve();
+						return;
+					}
+
+					requestAnimationFrame(drawFrame);
+				}
+
+				requestAnimationFrame(drawFrame);
+			});
+
+			recorder.stop();
+			await stopped;
+
+			for (const video of loadedVideos.values()) {
+				video.pause();
+				video.removeAttribute("src");
+				video.load();
+			}
+
+			for (const track of stream.getTracks()) {
+				track.stop();
+			}
+
+			return new Blob(chunks, { type: mimeType });
+		}
+
+		function stopAnimatedWallpaperPreview() {
+			wallpaperPreviewVideo.pause();
+			wallpaperPreviewVideo.style.display = "none";
+			wallpaperPreviewVideo.removeAttribute("src");
+			wallpaperPreviewVideo.load();
+		}
+
+		async function ensureAnimatedWallpaper(choice) {
+			if (choice.animatedBlob) {
+				return choice.animatedBlob;
+			}
+
+			choice.animatedBlob = await createAnimatedWallpaper(choice);
+			choice.animatedUrl = URL.createObjectURL(choice.animatedBlob);
+			return choice.animatedBlob;
+		}
+
+		async function previewAnimatedWallpaper() {
+			const choice = generatedChoices[selectedChoiceIndex];
+
+			if (!choice || !choice.hasVideos) {
+				return;
+			}
+
+			previewVideoWallpaperButton.disabled = true;
+			previewVideoWallpaperButton.textContent = "Rendering Video…";
+
+			try {
+				await ensureAnimatedWallpaper(choice);
+				const choiceGrid = document.getElementById("wallpaperChoiceGrid");
+
+				if (choiceGrid) {
+					choiceGrid.style.display = "none";
+				}
+
+				wallpaperPreviewImage.style.display = "none";
+				wallpaperPreviewVideo.src = choice.animatedUrl;
+				wallpaperPreviewVideo.style.display = "block";
+				await wallpaperPreviewVideo.play().catch(() => {});
+			} catch (error) {
+				console.error(error);
+				showGalleryToast(error.message || "The video preview could not be created.");
+			} finally {
+				previewVideoWallpaperButton.disabled = false;
+				previewVideoWallpaperButton.textContent = "Preview Video";
+			}
+		}
+
+		async function exportAnimatedWallpaper() {
+			const choice = generatedChoices[selectedChoiceIndex];
+
+			if (!choice || !choice.hasVideos) {
+				return;
+			}
+
+			exportVideoWallpaperButton.disabled = true;
+			exportVideoWallpaperButton.textContent = "Rendering WebM…";
+
+			try {
+				await ensureAnimatedWallpaper(choice);
+				const link = document.createElement("a");
+				link.href = choice.animatedUrl;
+				link.download = `trollmine-video-wallpaper-${Date.now()}.webm`;
+				document.body.appendChild(link);
+				link.click();
+				link.remove();
+				showGalleryToast("Animated WebM wallpaper downloaded.");
+			} catch (error) {
+				console.error(error);
+				showGalleryToast(error.message || "The video wallpaper could not be exported.");
+			} finally {
+				exportVideoWallpaperButton.disabled = false;
+				exportVideoWallpaperButton.textContent = "Export WebM";
+			}
+		}
+
+		previewVideoWallpaperButton.addEventListener("click", previewAnimatedWallpaper);
+		exportVideoWallpaperButton.addEventListener("click", exportAnimatedWallpaper);
 
 		function clearGeneratedChoices() {
 			for (const choice of generatedChoices) {
 				if (choice.url) {
 					URL.revokeObjectURL(choice.url);
+				}
+
+				if (choice.animatedUrl) {
+					URL.revokeObjectURL(choice.animatedUrl);
 				}
 			}
 
@@ -4026,6 +4526,19 @@
 		function selectGeneratedChoice(index) {
 			selectedChoiceIndex = index;
 			const choice = generatedChoices[index];
+			stopAnimatedWallpaperPreview();
+
+			const choiceGrid = document.getElementById("wallpaperChoiceGrid");
+
+			if (choiceGrid) {
+				choiceGrid.style.display = "grid";
+			}
+
+			wallpaperPreviewImage.style.display =
+				generatedChoices.length === 1 ? "block" : "none";
+
+			previewVideoWallpaperButton.hidden = !choice.hasVideos;
+			exportVideoWallpaperButton.hidden = !choice.hasVideos;
 
 			generatedWallpaperBlob = choice.blob;
 			generatedWallpaperUrl = choice.url;
@@ -4038,10 +4551,10 @@
 
 			if (statsElement) {
 				statsElement.textContent =
-					`${choice.width} × ${choice.height} • ${choice.count} photos • ${choice.layout} • ${Math.round(choice.generationTime)} ms • Seed ${choice.seed}`;
+					`${choice.width} × ${choice.height} • ${choice.count} media • ${choice.layout} • ${Math.round(choice.generationTime)} ms • Seed ${choice.seed}`;
 			}
 
-			previewSeed.textContent = `Seed: ${choice.seed} • ${choice.count} photos`;
+			previewSeed.textContent = `Seed: ${choice.seed} • ${choice.count} media`;
 		}
 
 		function showAdvancedWallpaperPreview(choices) {
