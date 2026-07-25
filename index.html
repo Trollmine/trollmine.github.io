@@ -2340,9 +2340,16 @@
 			);
 
 			let best = null;
+			const maximumAttempts = 1000;
 			const minimumRows = Math.max(2, Math.floor(options.count / 6));
 			const maximumRows = Math.min(7, Math.ceil(options.count / 2));
+			const possibleLayouts = [];
 
+			/*
+				Prepare every valid row-count/partition combination once.
+				Each of the 1000 attempts then picks one combination and tests
+				a newly shuffled deterministic photo order.
+			*/
 			for (
 				let rowCount = minimumRows;
 				rowCount <= maximumRows;
@@ -2356,36 +2363,55 @@
 				);
 
 				for (const partition of partitions) {
+					possibleLayouts.push(partition);
+				}
+			}
+
+			if (possibleLayouts.length === 0) {
+				throw new Error(
+					"The selected photo count cannot be divided into valid rows."
+				);
+			}
+
+			for (let attempt = 0; attempt < maximumAttempts; attempt++) {
+				const partition =
+					possibleLayouts[
+						Math.floor(options.random() * possibleLayouts.length)
+					];
+
+				const order =
+					attempt === 0
+						? selected
+						: seededShuffle(selected, options.random);
+
+				const candidate = evaluateLayout(
+					order,
+					partition,
+					usableWidth,
+					usableHeight,
+					horizontalGap
+				);
+
+				if (
+					candidate &&
+					(!best || candidate.score < best.score)
+				) {
+					best = candidate;
+
 					/*
-						Test several deterministic photo orders for this seed.
+						A score this low means the vertical and horizontal gaps
+						are already extremely close, so further attempts are
+						unlikely to produce a visible improvement.
 					*/
-					for (let attempt = 0; attempt < 90; attempt++) {
-						const order =
-							attempt === 0
-								? selected
-								: seededShuffle(selected, options.random);
-
-						const candidate = evaluateLayout(
-							order,
-							partition,
-							usableWidth,
-							usableHeight,
-							horizontalGap
-						);
-
-						if (
-							candidate &&
-							(!best || candidate.score < best.score)
-						) {
-							best = candidate;
-						}
+					if (best.score <= 1) {
+						break;
 					}
 				}
 			}
 
 			if (!best) {
 				throw new Error(
-					"The selected photo count cannot fit without cropping. Try fewer photos."
+					`No valid layout was found after ${maximumAttempts} attempts. Try fewer photos.`
 				);
 			}
 
