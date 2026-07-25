@@ -3,241 +3,118 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Trollmine Gallery</title>
-	<meta name="theme-color" content="#765fe7">
-	<link rel="stylesheet" href="gallerysys/styles.css">
+	<title>Trollmine</title>
+	<meta name="description" content="Trollmine — Roblox developer.">
+	<meta name="theme-color" content="#7c5cff">
+	<style>
+		@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+		:root { --background:#07070c; --card:rgba(18,18,29,.72); --border:rgba(255,255,255,.1); --text:#fff; --muted:#a7a7b4; --primary:#836fff; --secondary:#ba68ff; --accent:#58d6ff; }
+		* { box-sizing:border-box; margin:0; padding:0; }
+		html, body { min-height:100%; font-family:Inter,system-ui,sans-serif; }
+		body { min-height:100vh; overflow-x:hidden; color:var(--text); background:radial-gradient(circle at top,#181126 0%,var(--background) 48%),var(--background); display:flex; align-items:center; justify-content:center; padding:88px 20px 40px; }
+		.background-grid { position:fixed; inset:0; z-index:-5; background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px); background-size:45px 45px; mask-image:linear-gradient(to bottom,black,transparent 90%); }
+		.noise { position:fixed; inset:0; z-index:-4; opacity:.04; pointer-events:none; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); }
+		.blob { position:fixed; width:420px; height:420px; border-radius:50%; filter:blur(110px); opacity:.28; z-index:-3; animation:floatBlob 12s ease-in-out infinite alternate; }
+		.blob-one { top:-140px; left:-130px; background:var(--primary); }
+		.blob-two { right:-150px; bottom:-140px; background:var(--secondary); animation-delay:-4s; }
+		.blob-three { top:40%; left:55%; width:280px; height:280px; background:var(--accent); opacity:.12; animation-delay:-8s; }
+		@keyframes floatBlob { from { transform:translate3d(-20px,-15px,0) scale(1); } to { transform:translate3d(45px,35px,0) scale(1.15); } }
+		#particles { position:fixed; inset:0; z-index:-2; pointer-events:none; }
+		.site-tabs { position:fixed; top:18px; left:50%; z-index:1000; display:flex; gap:6px; padding:6px; transform:translateX(-50%); border:1px solid rgba(255,255,255,.12); border-radius:16px; background:rgba(15,15,24,.84); backdrop-filter:blur(18px); box-shadow:0 12px 35px rgba(0,0,0,.3); }
+		.tab-button { padding:10px 18px; border:0; border-radius:11px; background:transparent; color:#aaa7b6; font:700 .88rem Inter,sans-serif; cursor:pointer; transition:.2s ease; }
+		.tab-button:hover { color:white; transform:translateY(-1px); }
+		.tab-button.active { color:white; background:linear-gradient(135deg,#836fff,#6451d8); box-shadow:0 6px 18px rgba(131,111,255,.35); }
+		.page { width:100%; max-width:560px; animation:pageEnter .9s cubic-bezier(.16,1,.3,1); }
+		@keyframes pageEnter { from { opacity:0; transform:translateY(35px) scale(.97); } to { opacity:1; transform:none; } }
+		.card { position:relative; overflow:hidden; padding:34px; border:1px solid var(--border); border-radius:28px; background:var(--card); backdrop-filter:blur(24px); box-shadow:0 30px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08); }
+		.card::before { content:""; position:absolute; inset:0; padding:1px; border-radius:inherit; background:linear-gradient(135deg,rgba(131,111,255,.65),transparent 35%,transparent 65%,rgba(88,214,255,.3)); -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
+		.card-glow { position:absolute; top:-180px; left:50%; width:420px; height:300px; transform:translateX(-50%); background:radial-gradient(circle,rgba(131,111,255,.26),transparent 70%); pointer-events:none; }
+		.profile { position:relative; z-index:1; text-align:center; }
+		.avatar-wrapper { position:relative; width:122px; height:122px; margin:0 auto 22px; }
+		.avatar-ring { position:absolute; inset:-5px; border-radius:50%; background:conic-gradient(from 0deg,var(--primary),var(--secondary),var(--accent),var(--primary)); animation:rotateRing 5s linear infinite; filter:drop-shadow(0 0 12px rgba(131,111,255,.65)); }
+		.avatar-ring::after { content:""; position:absolute; inset:4px; border-radius:50%; background:#0d0d16; }
+		@keyframes rotateRing { to { transform:rotate(360deg); } }
+		.avatar { position:absolute; inset:4px; z-index:2; width:114px; height:114px; border:4px solid #0d0d16; border-radius:50%; object-fit:cover; background:linear-gradient(135deg,#24243e,#12121d); }
+		.status-dot { position:absolute; right:7px; bottom:8px; z-index:3; width:23px; height:23px; border:5px solid #12121d; border-radius:50%; background:#23d18b; box-shadow:0 0 14px rgba(35,209,139,.8); }
+		.name-row { display:flex; align-items:center; justify-content:center; gap:9px; }
+		h1 { font-size:clamp(2rem,8vw,2.8rem); font-weight:800; letter-spacing:-1.8px; background:linear-gradient(90deg,#fff 5%,#c9bfff 45%,#8ce8ff 100%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+		.verified { display:inline-flex; align-items:center; justify-content:center; width:23px; height:23px; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--accent)); font-size:13px; font-weight:800; box-shadow:0 0 15px rgba(131,111,255,.55); }
+		.username { margin-top:5px; color:var(--muted); font-size:.9rem; }
+		.typing-line { height:28px; margin-top:18px; color:#e8e5ff; font-size:1rem; font-weight:600; }
+		.cursor { display:inline-block; margin-left:2px; color:var(--accent); animation:blink .8s steps(1) infinite; }
+		@keyframes blink { 50% { opacity:0; } }
+		.bio { max-width:420px; margin:13px auto 0; color:var(--muted); font-size:.94rem; line-height:1.7; }
+		.tags { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:20px; }
+		.tag { padding:7px 11px; border:1px solid rgba(255,255,255,.08); border-radius:999px; background:rgba(255,255,255,.045); color:#cac7d8; font-size:.76rem; font-weight:600; }
+		.divider { height:1px; margin:27px 0; background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent); }
+		.links { display:flex; flex-direction:column; gap:13px; }
+		.link-card { position:relative; display:flex; align-items:center; width:100%; min-height:68px; padding:13px 17px; overflow:hidden; border:1px solid rgba(255,255,255,.08); border-radius:18px; background:rgba(255,255,255,.045); color:white; text-decoration:none; transition:.25s ease; }
+		.link-card:hover { transform:translateY(-4px) scale(1.015); border-color:rgba(131,111,255,.42); background:rgba(131,111,255,.09); box-shadow:0 14px 30px rgba(0,0,0,.28); }
+		.link-icon { display:flex; align-items:center; justify-content:center; flex-shrink:0; width:43px; height:43px; margin-right:14px; border:1px solid rgba(255,255,255,.08); border-radius:13px; background:rgba(255,255,255,.07); font-size:1.25rem; }
+		.link-info { flex:1; text-align:left; }
+		.link-title { display:block; font-size:.95rem; font-weight:700; }
+		.link-description { display:block; margin-top:3px; color:var(--muted); font-size:.76rem; }
+		.link-arrow { margin-left:12px; color:var(--muted); font-size:1.25rem; }
+		.footer { margin-top:25px; color:#676774; font-size:.75rem; text-align:center; }
+		.footer span { color:#9d8dff; }
+		.music-button { position:fixed; right:22px; bottom:22px; z-index:1100; display:flex; align-items:center; justify-content:center; width:48px; height:48px; border:1px solid rgba(255,255,255,.12); border-radius:15px; background:rgba(18,18,29,.75); backdrop-filter:blur(18px); color:white; font-size:1.1rem; cursor:pointer; box-shadow:0 10px 35px rgba(0,0,0,.35); }
+		.music-button.playing { animation:musicPulse 1.4s ease-in-out infinite; }
+		@keyframes musicPulse { 50% { box-shadow:0 0 0 8px rgba(131,111,255,.08),0 0 28px rgba(131,111,255,.42); } }
+		#galleryPage { position:fixed; inset:0; z-index:500; display:none; background:#fff; }
+		#galleryPage.active { display:block; }
+		#galleryFrame { width:100%; height:100%; border:0; background:white; }
+		@media (max-width:600px) { body { align-items:flex-start; padding:78px 14px 90px; } .site-tabs { top:10px; } .card { padding:28px 18px; border-radius:24px; } .avatar-wrapper { width:108px; height:108px; } .avatar { width:100px; height:100px; } }
+	</style>
 </head>
 <body>
-	<header class="topbar">
-		<div>
-			<h1>Trollmine Gallery</h1>
-			<p>Local gallery, mosaics, videos, layouts, projects and collections.</p>
-		</div>
-		<div class="top-actions">
-			<label class="button primary">
-				Add folder
-				<input id="folderInput" type="file" webkitdirectory multiple hidden>
-			</label>
-			<label class="button">
-				Add files
-				<input id="fileInput" type="file" accept="image/*,video/*" multiple hidden>
-			</label>
-			<button id="openSettingsButton" class="button" type="button">Settings</button>
-		</div>
-	</header>
-
-	<nav class="tabs" aria-label="Application sections">
-		<button class="tab active" data-tab="gallery" type="button">Gallery</button>
-		<button class="tab" data-tab="generator" type="button">Generator</button>
-		<button class="tab" data-tab="collections" type="button">Collections</button>
-		<button class="tab" data-tab="layouts" type="button">Custom layouts</button>
-		<button class="tab" data-tab="projects" type="button">Projects</button>
+	<nav class="site-tabs">
+		<button class="tab-button active" id="homeTab" type="button">Profile</button>
+		<button class="tab-button" id="galleryTab" type="button">Gallery</button>
 	</nav>
-
-	<main>
-		<section id="galleryTab" class="tab-panel active">
-			<div class="section-heading">
-				<div>
-					<h2>Gallery</h2>
-					<p id="gallerySummary">No folders selected.</p>
+	<div class="background-grid"></div><div class="noise"></div>
+	<div class="blob blob-one"></div><div class="blob blob-two"></div><div class="blob blob-three"></div>
+	<canvas id="particles"></canvas>
+	<main class="page" id="homePage">
+		<section class="card" id="profileCard">
+			<div class="card-glow"></div>
+			<div class="profile">
+				<div class="avatar-wrapper"><div class="avatar-ring"></div><img class="avatar" src="avatar.png" alt="Trollmine profile picture"><div class="status-dot" title="Online"></div></div>
+				<div class="name-row"><h1>Trollmine</h1><span class="verified" title="Verified">✓</span></div>
+				<p class="username">@trollmine</p>
+				<div class="typing-line"><span id="typingText"></span><span class="cursor">|</span></div>
+				<p class="bio">Roblox developer creating games, systems and tools.</p>
+				<div class="tags"><span class="tag">Roblox Studio</span><span class="tag">Lua</span><span class="tag">Web Development</span></div>
+				<div class="divider"></div>
+				<div class="links">
+					<a class="link-card discord" href="https://discord.gg/h6HXbB6Mvs" target="_blank" rel="noopener noreferrer"><div class="link-icon">💬</div><div class="link-info"><span class="link-title">Discord</span><span class="link-description">Join my community</span></div><span class="link-arrow">›</span></a>
+					<a class="link-card github" href="https://github.com/trollmine" target="_blank" rel="noopener noreferrer"><div class="link-icon">⌨</div><div class="link-info"><span class="link-title">GitHub</span><span class="link-description">Projects and source code</span></div><span class="link-arrow">›</span></a>
+					<a class="link-card roblox" href="https://www.roblox.com/users/3522553826/profile" target="_blank" rel="noopener noreferrer"><div class="link-icon">◈</div><div class="link-info"><span class="link-title">Roblox</span><span class="link-description">View my Roblox profile</span></div><span class="link-arrow">›</span></a>
+					<a class="link-card youtube" href="https://youtube.com/@TrollmineOFF" target="_blank" rel="noopener noreferrer"><div class="link-icon">▶</div><div class="link-info"><span class="link-title">YouTube</span><span class="link-description">Videos and development content</span></div><span class="link-arrow">›</span></a>
 				</div>
-				<div class="inline-actions">
-					<button id="clearGalleryButton" class="button danger" type="button">Clear</button>
-				</div>
-			</div>
-			<div id="sourceList" class="source-list"></div>
-			<div id="galleryGrid" class="gallery-grid"></div>
-			<div id="emptyGallery" class="empty-state">
-				<h3>Add one or more folders</h3>
-				<p>Images and videos stay local in your browser.</p>
-			</div>
-		</section>
-
-		<section id="generatorTab" class="tab-panel">
-			<div class="section-heading">
-				<div>
-					<h2>Wallpaper generator</h2>
-					<p>Every advanced system can be enabled or disabled in Settings.</p>
-				</div>
-				<div class="inline-actions">
-					<button id="generateButton" class="button primary" type="button">Generate</button>
-					<button id="remakeButton" class="button" type="button">Remake</button>
-				</div>
-			</div>
-
-			<div class="generator-layout">
-				<aside class="panel compact-panel">
-					<h3>Quick controls</h3>
-					<label>Photo count <input id="photoCountInput" type="number" min="1" max="100" value="18"></label>
-					<label>Seed <input id="seedInput" type="text" value=""></label>
-					<label>Layout
-						<select id="layoutSelect">
-							<option value="balanced">Balanced</option>
-							<option value="chaotic">Chaotic</option>
-							<option value="hero">Hero</option>
-							<option value="grid">Grid</option>
-						</select>
-					</label>
-					<label>Background
-						<select id="backgroundSelect">
-							<option value="white">White</option>
-							<option value="black">Black</option>
-							<option value="transparent">Transparent</option>
-							<option value="custom">Custom color</option>
-							<option value="gradient">Gradient</option>
-							<option value="dominant">Photo-based color</option>
-							<option value="blurred">Blurred used photos</option>
-						</select>
-					</label>
-					<label>Primary color <input id="backgroundColorOne" type="color" value="#ffffff"></label>
-					<label>Secondary color <input id="backgroundColorTwo" type="color" value="#765fe7"></label>
-					<label class="check-row"><input id="useCustomLayoutsInput" type="checkbox"> Include enabled custom layouts</label>
-					<label class="check-row"><input id="preferenceBiasInput" type="checkbox"> Use rating preference bias</label>
-				</aside>
-
-				<div class="preview-column">
-					<div id="previewShell" class="preview-shell checkerboard">
-						<canvas id="previewCanvas" width="1280" height="720"></canvas>
-						<div id="editorOverlay" class="editor-overlay"></div>
-					</div>
-					<div id="previewInfo" class="preview-info">Generate a wallpaper to preview it.</div>
-					<div class="preview-actions">
-						<button id="downloadButton" class="button primary" type="button" disabled>Download PNG</button>
-						<button id="downloadAnimatedButton" class="button" type="button" disabled>Export WebM</button>
-						<button id="toggleEditorButton" class="button" type="button" disabled>Edit layout</button>
-						<button id="regenerateUnlockedButton" class="button" type="button" disabled>Regenerate unlocked</button>
-						<button id="devicePreviewButton" class="button" type="button" disabled>Device preview</button>
-					</div>
-					<div id="ratingPanel" class="rating-panel hidden">
-						<span>Rate this result:</span>
-						<div id="ratingStars" class="rating-stars"></div>
-						<button id="favoriteCurrentButton" class="button small" type="button">Favorite</button>
-						<button id="dislikeCurrentButton" class="button small danger" type="button">Dislike</button>
-					</div>
-				</div>
-			</div>
-		</section>
-
-		<section id="collectionsTab" class="tab-panel">
-			<div class="section-heading">
-				<div>
-					<h2>Collections</h2>
-					<p>Organize generated wallpapers into named groups.</p>
-				</div>
-				<div class="inline-actions">
-					<input id="newCollectionName" type="text" placeholder="Collection name">
-					<button id="createCollectionButton" class="button primary" type="button">Create</button>
-				</div>
-			</div>
-			<div id="collectionsGrid" class="cards-grid"></div>
-		</section>
-
-		<section id="layoutsTab" class="tab-panel">
-			<div class="section-heading">
-				<div>
-					<h2>Custom layouts</h2>
-					<p>Built-in layouts always remain available. Custom layouts can be enabled or disabled individually.</p>
-				</div>
-				<div class="inline-actions">
-					<button id="createLayoutButton" class="button primary" type="button">Create layout</button>
-					<button id="importLayoutButton" class="button" type="button">Import</button>
-				</div>
-			</div>
-			<div class="layout-builder panel">
-				<label>Name <input id="layoutNameInput" type="text" value="My layout"></label>
-				<label>Columns <input id="layoutColumnsInput" type="number" min="1" max="8" value="3"></label>
-				<label>Rows <input id="layoutRowsInput" type="number" min="1" max="8" value="2"></label>
-				<p>Create a grid layout, then enable or disable it below. Layout codes can be shared with friends.</p>
-			</div>
-			<div id="customLayoutsGrid" class="cards-grid"></div>
-		</section>
-
-		<section id="projectsTab" class="tab-panel">
-			<div class="section-heading">
-				<div>
-					<h2>Projects</h2>
-					<p>Export settings, ratings, collections, exclusions, preferences and custom layouts.</p>
-				</div>
-			</div>
-			<div class="project-actions panel">
-				<button id="exportProjectButton" class="button primary" type="button">Export project</button>
-				<label class="button">
-					Import project
-					<input id="importProjectInput" type="file" accept=".tmgproject,application/json" hidden>
-				</label>
-				<button id="exportSettingsCodeButton" class="button" type="button">Copy settings code</button>
-				<button id="importSettingsCodeButton" class="button" type="button">Apply settings code</button>
+				<p class="footer">Made by <span>Trollmine</span></p>
 			</div>
 		</section>
 	</main>
-
-	<div id="settingsModal" class="modal" aria-hidden="true">
-		<div class="modal-card settings-card">
-			<div class="modal-header">
-				<div>
-					<h2>Settings</h2>
-					<p>All optional systems can be switched off.</p>
-				</div>
-				<button class="icon-button" data-close-modal="settingsModal" type="button">×</button>
-			</div>
-			<div class="settings-grid">
-				<label class="check-row"><input id="smartSelectionSetting" type="checkbox"> Smart photo selection</label>
-				<label class="check-row"><input id="preferUnusedSetting" type="checkbox"> Prefer unused photos</label>
-				<label class="check-row"><input id="avoidSimilarSetting" type="checkbox"> Avoid adjacent similar aspect ratios</label>
-				<label class="check-row"><input id="duplicateDetectionSetting" type="checkbox"> Visual duplicate detection</label>
-				<label class="check-row"><input id="faceAwarenessSetting" type="checkbox"> Face-aware sizing when supported</label>
-				<label class="check-row"><input id="smartHeroSetting" type="checkbox"> Smart hero selection</label>
-				<label class="check-row"><input id="colorHarmonySetting" type="checkbox"> Match borders and shadows to photos</label>
-				<label class="check-row"><input id="ratingsSetting" type="checkbox"> Ratings and favorites</label>
-				<label class="check-row"><input id="biasSetting" type="checkbox"> Preference-learning bias</label>
-				<label class="check-row"><input id="historySetting" type="checkbox"> Generation history</label>
-				<label class="check-row"><input id="animatedSetting" type="checkbox"> Animated WebM export</label>
-				<label class="check-row"><input id="editorSetting" type="checkbox"> Manual editor</label>
-				<label>Resolution
-					<select id="resolutionSetting">
-						<option value="2560x1440">2560 × 1440</option>
-						<option value="1920x1080">1920 × 1080</option>
-						<option value="3840x2160">3840 × 2160</option>
-						<option value="3440x1440">3440 × 1440</option>
-						<option value="1080x1920">1080 × 1920</option>
-					</select>
-				</label>
-				<label>Gap <input id="gapSetting" type="number" min="0" max="80" value="8"></label>
-				<label>Corner radius <input id="radiusSetting" type="number" min="0" max="80" value="0"></label>
-				<label>Border
-					<select id="borderSetting">
-						<option value="none">None</option>
-						<option value="white">White</option>
-						<option value="black">Black</option>
-						<option value="polaroid">Polaroid</option>
-					</select>
-				</label>
-				<label class="check-row"><input id="shadowSetting" type="checkbox"> Shadows</label>
-			</div>
-			<div class="modal-footer">
-				<button id="resetSettingsButton" class="button danger" type="button">Reset</button>
-				<button id="saveSettingsButton" class="button primary" type="button">Save settings</button>
-			</div>
-		</div>
-	</div>
-
-	<div id="deviceModal" class="modal" aria-hidden="true">
-		<div class="modal-card device-card">
-			<div class="modal-header">
-				<h2>Device preview</h2>
-				<button class="icon-button" data-close-modal="deviceModal" type="button">×</button>
-			</div>
-			<div class="device-tabs">
-				<button class="device-option active" data-device="monitor" type="button">Monitor</button>
-				<button class="device-option" data-device="ultrawide" type="button">Ultrawide</button>
-				<button class="device-option" data-device="dual" type="button">Dual monitors</button>
-				<button class="device-option" data-device="phone" type="button">Phone</button>
-			</div>
-			<div id="deviceStage" class="device-stage"></div>
-		</div>
-	</div>
-
-	<div id="toast" class="toast"></div>
-	<script type="module" src="gallerysys/app.js"></script>
+	<section id="galleryPage"><iframe id="galleryFrame" src="gallerysys/gallery.html" title="Trollmine Gallery"></iframe></section>
+	<audio id="backgroundMusic" src="music.mp3" loop preload="auto"></audio>
+	<button class="music-button" id="musicButton" type="button" aria-label="Toggle music">♫</button>
+	<script>
+		const homeTab=document.getElementById("homeTab"), galleryTab=document.getElementById("galleryTab"), homePage=document.getElementById("homePage"), galleryPage=document.getElementById("galleryPage");
+		function showPage(page){const gallery=page==="gallery"; homePage.style.display=gallery?"none":"block"; galleryPage.classList.toggle("active",gallery); homeTab.classList.toggle("active",!gallery); galleryTab.classList.toggle("active",gallery); document.body.style.overflow=gallery?"hidden":"auto";}
+		homeTab.addEventListener("click",()=>showPage("home")); galleryTab.addEventListener("click",()=>showPage("gallery"));
+		const phrases=["Roblox developer","Building systems and games","Creating weird things on the internet"];
+		const typingText=document.getElementById("typingText"); let phraseIndex=0,charIndex=0,deleting=false;
+		function type(){const phrase=phrases[phraseIndex]; typingText.textContent=deleting?phrase.slice(0,--charIndex):phrase.slice(0,++charIndex); let delay=deleting?35:65; if(!deleting&&charIndex===phrase.length){deleting=true;delay=1300;}else if(deleting&&charIndex===0){deleting=false;phraseIndex=(phraseIndex+1)%phrases.length;delay=300;} setTimeout(type,delay);} type();
+		const music=document.getElementById("backgroundMusic"), musicButton=document.getElementById("musicButton");
+		let musicEnabled=localStorage.getItem("trollmineMusicEnabled")!=="false";
+		function updateMusicButton(){musicButton.textContent=music.paused?"♫":"❚❚";musicButton.classList.toggle("playing",!music.paused);}
+		async function playMusic(){try{await music.play();updateMusicButton();}catch{updateMusicButton();}}
+		if(musicEnabled) playMusic();
+		document.addEventListener("pointerdown",()=>{if(musicEnabled&&music.paused)playMusic();},{once:true});
+		musicButton.addEventListener("click",()=>{if(music.paused){musicEnabled=true;localStorage.setItem("trollmineMusicEnabled","true");playMusic();}else{music.pause();musicEnabled=false;localStorage.setItem("trollmineMusicEnabled","false");updateMusicButton();}});
+		const canvas=document.getElementById("particles"),ctx=canvas.getContext("2d");let particles=[];
+		function resize(){canvas.width=innerWidth;canvas.height=innerHeight;particles=Array.from({length:Math.min(70,Math.floor(innerWidth/22))},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.6+.3,v:Math.random()*.25+.05,a:Math.random()*.5+.1}));}
+		function animate(){ctx.clearRect(0,0,canvas.width,canvas.height);for(const p of particles){p.y-=p.v;if(p.y<-5){p.y=canvas.height+5;p.x=Math.random()*canvas.width;}ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(190,180,255,${p.a})`;ctx.fill();}requestAnimationFrame(animate);} addEventListener("resize",resize);resize();animate();
+	</script>
 </body>
 </html>

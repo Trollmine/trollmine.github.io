@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Trollmine Gallery</title>
+	<meta name="theme-color" content="#765fe7">
+	<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+	<header class="topbar">
+		<div>
+			<h1>Trollmine Gallery</h1>
+			<p>Local gallery, mosaics, videos, layouts, projects and collections.</p>
+		</div>
+		<div class="top-actions">
+			<label class="button primary">
+				Add folder
+				<input id="folderInput" type="file" webkitdirectory multiple hidden>
+			</label>
+			<label class="button">
+				Add files
+				<input id="fileInput" type="file" accept="image/*,video/*" multiple hidden>
+			</label>
+			<button id="openSettingsButton" class="button" type="button">Settings</button>
+		</div>
+	</header>
+
+	<nav class="tabs" aria-label="Application sections">
+		<button class="tab active" data-tab="gallery" type="button">Gallery</button>
+		<button class="tab" data-tab="generator" type="button">Generator</button>
+		<button class="tab" data-tab="collections" type="button">Collections</button>
+		<button class="tab" data-tab="layouts" type="button">Custom layouts</button>
+		<button class="tab" data-tab="projects" type="button">Projects</button>
+	</nav>
+
+	<main>
+		<section id="galleryTab" class="tab-panel active">
+			<div class="section-heading">
+				<div>
+					<h2>Gallery</h2>
+					<p id="gallerySummary">No folders selected.</p>
+				</div>
+				<div class="inline-actions">
+					<button id="clearGalleryButton" class="button danger" type="button">Clear</button>
+				</div>
+			</div>
+			<div id="sourceList" class="source-list"></div>
+			<div id="galleryGrid" class="gallery-grid"></div>
+			<div id="emptyGallery" class="empty-state">
+				<h3>Add one or more folders</h3>
+				<p>Images and videos stay local in your browser.</p>
+			</div>
+		</section>
+
+		<section id="generatorTab" class="tab-panel">
+			<div class="section-heading">
+				<div>
+					<h2>Wallpaper generator</h2>
+					<p>Every advanced system can be enabled or disabled in Settings.</p>
+				</div>
+				<div class="inline-actions">
+					<button id="generateButton" class="button primary" type="button">Generate</button>
+					<button id="remakeButton" class="button" type="button">Remake</button>
+				</div>
+			</div>
+
+			<div class="generator-layout">
+				<aside class="panel compact-panel">
+					<h3>Quick controls</h3>
+					<label>Photo count <input id="photoCountInput" type="number" min="1" max="100" value="18"></label>
+					<label>Seed <input id="seedInput" type="text" value=""></label>
+					<label>Layout
+						<select id="layoutSelect">
+							<option value="balanced">Balanced</option>
+							<option value="chaotic">Chaotic</option>
+							<option value="hero">Hero</option>
+							<option value="grid">Grid</option>
+						</select>
+					</label>
+					<label>Background
+						<select id="backgroundSelect">
+							<option value="white">White</option>
+							<option value="black">Black</option>
+							<option value="transparent">Transparent</option>
+							<option value="custom">Custom color</option>
+							<option value="gradient">Gradient</option>
+							<option value="dominant">Photo-based color</option>
+							<option value="blurred">Blurred used photos</option>
+						</select>
+					</label>
+					<label>Primary color <input id="backgroundColorOne" type="color" value="#ffffff"></label>
+					<label>Secondary color <input id="backgroundColorTwo" type="color" value="#765fe7"></label>
+					<label class="check-row"><input id="useCustomLayoutsInput" type="checkbox"> Include enabled custom layouts</label>
+					<label class="check-row"><input id="preferenceBiasInput" type="checkbox"> Use rating preference bias</label>
+				</aside>
+
+				<div class="preview-column">
+					<div id="previewShell" class="preview-shell checkerboard">
+						<canvas id="previewCanvas" width="1280" height="720"></canvas>
+						<div id="editorOverlay" class="editor-overlay"></div>
+					</div>
+					<div id="previewInfo" class="preview-info">Generate a wallpaper to preview it.</div>
+					<div class="preview-actions">
+						<button id="downloadButton" class="button primary" type="button" disabled>Download PNG</button>
+						<button id="downloadAnimatedButton" class="button" type="button" disabled>Export WebM</button>
+						<button id="toggleEditorButton" class="button" type="button" disabled>Edit layout</button>
+						<button id="regenerateUnlockedButton" class="button" type="button" disabled>Regenerate unlocked</button>
+						<button id="devicePreviewButton" class="button" type="button" disabled>Device preview</button>
+					</div>
+					<div id="ratingPanel" class="rating-panel hidden">
+						<span>Rate this result:</span>
+						<div id="ratingStars" class="rating-stars"></div>
+						<button id="favoriteCurrentButton" class="button small" type="button">Favorite</button>
+						<button id="dislikeCurrentButton" class="button small danger" type="button">Dislike</button>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section id="collectionsTab" class="tab-panel">
+			<div class="section-heading">
+				<div>
+					<h2>Collections</h2>
+					<p>Organize generated wallpapers into named groups.</p>
+				</div>
+				<div class="inline-actions">
+					<input id="newCollectionName" type="text" placeholder="Collection name">
+					<button id="createCollectionButton" class="button primary" type="button">Create</button>
+				</div>
+			</div>
+			<div id="collectionsGrid" class="cards-grid"></div>
+		</section>
+
+		<section id="layoutsTab" class="tab-panel">
+			<div class="section-heading">
+				<div>
+					<h2>Custom layouts</h2>
+					<p>Built-in layouts always remain available. Custom layouts can be enabled or disabled individually.</p>
+				</div>
+				<div class="inline-actions">
+					<button id="createLayoutButton" class="button primary" type="button">Create layout</button>
+					<button id="importLayoutButton" class="button" type="button">Import</button>
+				</div>
+			</div>
+			<div class="layout-builder panel">
+				<label>Name <input id="layoutNameInput" type="text" value="My layout"></label>
+				<label>Columns <input id="layoutColumnsInput" type="number" min="1" max="8" value="3"></label>
+				<label>Rows <input id="layoutRowsInput" type="number" min="1" max="8" value="2"></label>
+				<p>Create a grid layout, then enable or disable it below. Layout codes can be shared with friends.</p>
+			</div>
+			<div id="customLayoutsGrid" class="cards-grid"></div>
+		</section>
+
+		<section id="projectsTab" class="tab-panel">
+			<div class="section-heading">
+				<div>
+					<h2>Projects</h2>
+					<p>Export settings, ratings, collections, exclusions, preferences and custom layouts.</p>
+				</div>
+			</div>
+			<div class="project-actions panel">
+				<button id="exportProjectButton" class="button primary" type="button">Export project</button>
+				<label class="button">
+					Import project
+					<input id="importProjectInput" type="file" accept=".tmgproject,application/json" hidden>
+				</label>
+				<button id="exportSettingsCodeButton" class="button" type="button">Copy settings code</button>
+				<button id="importSettingsCodeButton" class="button" type="button">Apply settings code</button>
+			</div>
+		</section>
+	</main>
+
+	<div id="settingsModal" class="modal" aria-hidden="true">
+		<div class="modal-card settings-card">
+			<div class="modal-header">
+				<div>
+					<h2>Settings</h2>
+					<p>All optional systems can be switched off.</p>
+				</div>
+				<button class="icon-button" data-close-modal="settingsModal" type="button">×</button>
+			</div>
+			<div class="settings-grid">
+				<label class="check-row"><input id="smartSelectionSetting" type="checkbox"> Smart photo selection</label>
+				<label class="check-row"><input id="preferUnusedSetting" type="checkbox"> Prefer unused photos</label>
+				<label class="check-row"><input id="avoidSimilarSetting" type="checkbox"> Avoid adjacent similar aspect ratios</label>
+				<label class="check-row"><input id="duplicateDetectionSetting" type="checkbox"> Visual duplicate detection</label>
+				<label class="check-row"><input id="faceAwarenessSetting" type="checkbox"> Face-aware sizing when supported</label>
+				<label class="check-row"><input id="smartHeroSetting" type="checkbox"> Smart hero selection</label>
+				<label class="check-row"><input id="colorHarmonySetting" type="checkbox"> Match borders and shadows to photos</label>
+				<label class="check-row"><input id="ratingsSetting" type="checkbox"> Ratings and favorites</label>
+				<label class="check-row"><input id="biasSetting" type="checkbox"> Preference-learning bias</label>
+				<label class="check-row"><input id="historySetting" type="checkbox"> Generation history</label>
+				<label class="check-row"><input id="animatedSetting" type="checkbox"> Animated WebM export</label>
+				<label class="check-row"><input id="editorSetting" type="checkbox"> Manual editor</label>
+				<label>Resolution
+					<select id="resolutionSetting">
+						<option value="2560x1440">2560 × 1440</option>
+						<option value="1920x1080">1920 × 1080</option>
+						<option value="3840x2160">3840 × 2160</option>
+						<option value="3440x1440">3440 × 1440</option>
+						<option value="1080x1920">1080 × 1920</option>
+					</select>
+				</label>
+				<label>Gap <input id="gapSetting" type="number" min="0" max="80" value="8"></label>
+				<label>Corner radius <input id="radiusSetting" type="number" min="0" max="80" value="0"></label>
+				<label>Border
+					<select id="borderSetting">
+						<option value="none">None</option>
+						<option value="white">White</option>
+						<option value="black">Black</option>
+						<option value="polaroid">Polaroid</option>
+					</select>
+				</label>
+				<label class="check-row"><input id="shadowSetting" type="checkbox"> Shadows</label>
+			</div>
+			<div class="modal-footer">
+				<button id="resetSettingsButton" class="button danger" type="button">Reset</button>
+				<button id="saveSettingsButton" class="button primary" type="button">Save settings</button>
+			</div>
+		</div>
+	</div>
+
+	<div id="deviceModal" class="modal" aria-hidden="true">
+		<div class="modal-card device-card">
+			<div class="modal-header">
+				<h2>Device preview</h2>
+				<button class="icon-button" data-close-modal="deviceModal" type="button">×</button>
+			</div>
+			<div class="device-tabs">
+				<button class="device-option active" data-device="monitor" type="button">Monitor</button>
+				<button class="device-option" data-device="ultrawide" type="button">Ultrawide</button>
+				<button class="device-option" data-device="dual" type="button">Dual monitors</button>
+				<button class="device-option" data-device="phone" type="button">Phone</button>
+			</div>
+			<div id="deviceStage" class="device-stage"></div>
+		</div>
+	</div>
+
+	<div id="toast" class="toast"></div>
+	<script type="module" src="app.js"></script>
+</body>
+</html>
