@@ -612,79 +612,206 @@
 			box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12);
 		}
 
-		.generator-settings {
-			display: flex;
-			flex-wrap: wrap;
-			align-items: end;
-			gap: 12px;
-			padding: 12px 16px;
-			border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-			background: rgba(255, 255, 255, 0.96);
-		}
 
-		.generator-setting {
-			display: flex;
-			flex-direction: column;
-			gap: 5px;
-			min-width: 110px;
-		}
-
-		.generator-setting label,
-		.generator-mode-label {
-			font-size: 0.72rem;
-			font-weight: 800;
-			color: #555;
-			text-transform: uppercase;
-			letter-spacing: 0.06em;
-		}
-
-		.generator-setting input[type="number"],
-		.generator-setting input[type="text"] {
-			height: 38px;
-			padding: 0 10px;
-			border: 1px solid rgba(0, 0, 0, 0.16);
-			border-radius: 9px;
-			background: #fff;
-			color: #111;
-			font: inherit;
-			font-weight: 700;
-		}
-
-		.generator-mode {
-			display: flex;
+		.generator-settings-overlay {
+			position: fixed;
+			inset: 0;
+			z-index: 320;
+			display: none;
 			align-items: center;
-			gap: 8px;
-			height: 38px;
+			justify-content: center;
+			padding: 20px;
+			background: rgba(0, 0, 0, 0.46);
+			backdrop-filter: blur(7px);
+			-webkit-backdrop-filter: blur(7px);
 		}
 
-		.generator-mode input {
-			width: 18px;
-			height: 18px;
-		}
-
-		.generator-seed-row {
+		.generator-settings-overlay.visible {
 			display: flex;
-			gap: 7px;
 		}
 
-		.generator-seed-row input {
-			width: 150px;
+		.generator-settings-card {
+			width: min(520px, 100%);
+			max-height: calc(100vh - 40px);
+			overflow-y: auto;
+			padding: 22px;
+			border: 1px solid rgba(0, 0, 0, 0.1);
+			border-radius: 20px;
+			background: #ffffff;
+			color: #111111;
+			box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
 		}
 
-		.seed-randomize-button {
+		.generator-settings-header {
+			display: flex;
+			align-items: flex-start;
+			justify-content: space-between;
+			gap: 16px;
+			margin-bottom: 20px;
+		}
+
+		.generator-settings-title {
+			margin: 0;
+			font-size: 1.25rem;
+			font-weight: 850;
+		}
+
+		.generator-settings-description {
+			margin: 5px 0 0;
+			color: #6b6b6b;
+			font-size: 0.84rem;
+			line-height: 1.45;
+		}
+
+		.close-generator-settings {
+			flex: 0 0 auto;
+			width: 38px;
 			height: 38px;
-			padding: 0 12px;
-			border: 1px solid rgba(0, 0, 0, 0.16);
+			border: 1px solid rgba(0, 0, 0, 0.12);
+			border-radius: 11px;
+			background: #f5f5f5;
+			color: #111111;
+			font-family: inherit;
+			font-size: 1.25rem;
+			font-weight: 700;
+			cursor: pointer;
+		}
+
+		.generator-section {
+			padding: 16px;
+			border: 1px solid rgba(0, 0, 0, 0.1);
+			border-radius: 15px;
+			background: #fafafa;
+		}
+
+		.generator-section + .generator-section {
+			margin-top: 12px;
+		}
+
+		.generator-section-title {
+			margin: 0 0 12px;
+			font-size: 0.78rem;
+			font-weight: 850;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+			color: #555555;
+		}
+
+		.count-mode-switch {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 8px;
+			padding: 4px;
+			border-radius: 12px;
+			background: #ededed;
+		}
+
+		.count-mode-button {
+			height: 40px;
+			border: 0;
 			border-radius: 9px;
-			background: #fff;
-			color: #111;
-			font: inherit;
+			background: transparent;
+			color: #666666;
+			font-family: inherit;
+			font-size: 0.86rem;
 			font-weight: 800;
 			cursor: pointer;
 		}
 
-		.generator-setting.is-disabled {
-			opacity: 0.45;
+		.count-mode-button.active {
+			background: #ffffff;
+			color: #111111;
+			box-shadow: 0 2px 9px rgba(0, 0, 0, 0.1);
+		}
+
+		.generator-fields {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 12px;
+			margin-top: 14px;
+		}
+
+		.generator-fields.single {
+			grid-template-columns: 1fr;
+		}
+
+		.generator-field {
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+		}
+
+		.generator-field.hidden {
+			display: none;
+		}
+
+		.generator-field label {
+			color: #555555;
+			font-size: 0.75rem;
+			font-weight: 800;
+		}
+
+		.generator-field input {
+			width: 100%;
+			height: 43px;
+			padding: 0 12px;
+			border: 1px solid rgba(0, 0, 0, 0.16);
+			border-radius: 10px;
+			outline: none;
+			background: #ffffff;
+			color: #111111;
+			font: inherit;
+			font-weight: 750;
+		}
+
+		.generator-field input:focus {
+			border-color: #7662e5;
+			box-shadow: 0 0 0 3px rgba(118, 98, 229, 0.14);
+		}
+
+		.seed-input-row {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
+			gap: 8px;
+		}
+
+		.seed-randomize-button {
+			width: 43px;
+			height: 43px;
+			border: 1px solid rgba(0, 0, 0, 0.14);
+			border-radius: 10px;
+			background: #ffffff;
+			color: #111111;
+			font-family: inherit;
+			font-size: 1.1rem;
+			font-weight: 800;
+			cursor: pointer;
+		}
+
+		.generator-settings-footer {
+			display: flex;
+			justify-content: flex-end;
+			gap: 9px;
+			margin-top: 18px;
+		}
+
+		.generator-footer-button {
+			height: 43px;
+			padding: 0 18px;
+			border: 1px solid rgba(0, 0, 0, 0.12);
+			border-radius: 11px;
+			background: #f3f3f3;
+			color: #111111;
+			font-family: inherit;
+			font-size: 0.86rem;
+			font-weight: 850;
+			cursor: pointer;
+		}
+
+		.generator-footer-button.primary {
+			border-color: transparent;
+			background: linear-gradient(135deg, #836fff, #6451d8);
+			color: #ffffff;
 		}
 
 		.preview-seed {
@@ -692,20 +819,23 @@
 			text-align: center;
 			font-size: 0.82rem;
 			font-weight: 700;
-			color: #555;
+			color: #555555;
 		}
 
-		@media (max-width: 700px) {
-			.generator-settings {
-				align-items: stretch;
+		@media (max-width: 520px) {
+			.generator-settings-overlay {
+				align-items: flex-end;
+				padding: 0;
 			}
 
-			.generator-setting {
-				flex: 1 1 135px;
-			}
-
-			.generator-seed-row input {
+			.generator-settings-card {
 				width: 100%;
+				max-height: 88vh;
+				border-radius: 20px 20px 0 0;
+			}
+
+			.generator-fields {
+				grid-template-columns: 1fr;
 			}
 		}
 
@@ -1174,6 +1304,15 @@
 			<button class="gallery-control" id="zoomInButton" type="button" title="Zoom in">+</button>
 			<button class="gallery-control" id="resetGalleryButton" type="button">Reset</button>
 			<button
+				class="gallery-control"
+				id="openGeneratorSettingsButton"
+				type="button"
+				title="Wallpaper generator settings"
+			>
+				Settings
+			</button>
+
+			<button
 				class="gallery-control generate-background-button"
 				id="generateBackgroundButton"
 				type="button"
@@ -1183,47 +1322,154 @@
 			</button>
 		</div>
 
-		<div class="generator-settings" id="generatorSettings">
-			<div class="generator-setting">
-				<span class="generator-mode-label">Photo amount</span>
-				<label class="generator-mode">
-					<input id="randomCountEnabled" type="checkbox" checked>
-					Random amount
-				</label>
-			</div>
 
-			<div class="generator-setting" id="fixedCountSetting">
-				<label for="fixedPhotoCount">Fixed count</label>
-				<input id="fixedPhotoCount" type="number" min="1" max="100" value="18">
-			</div>
+		<div
+			class="generator-settings-overlay"
+			id="generatorSettingsOverlay"
+			aria-hidden="true"
+		>
+			<div
+				class="generator-settings-card"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="generatorSettingsTitle"
+			>
+				<div class="generator-settings-header">
+					<div>
+						<h2
+							class="generator-settings-title"
+							id="generatorSettingsTitle"
+						>
+							Wallpaper Generator
+						</h2>
+						<p class="generator-settings-description">
+							Choose how many photos the wallpaper should use and
+							set a seed to recreate the same result later.
+						</p>
+					</div>
 
-			<div class="generator-setting" id="minimumCountSetting">
-				<label for="minimumPhotoCount">Minimum</label>
-				<input id="minimumPhotoCount" type="number" min="1" max="100" value="15">
-			</div>
-
-			<div class="generator-setting" id="maximumCountSetting">
-				<label for="maximumPhotoCount">Maximum</label>
-				<input id="maximumPhotoCount" type="number" min="1" max="100" value="20">
-			</div>
-
-			<div class="generator-setting">
-				<label for="wallpaperSeed">Seed</label>
-				<div class="generator-seed-row">
-					<input
-						id="wallpaperSeed"
-						type="text"
-						value=""
-						placeholder="Random seed"
-						autocomplete="off"
-					>
 					<button
-						class="seed-randomize-button"
-						id="randomizeSeedButton"
+						class="close-generator-settings"
+						id="closeGeneratorSettingsButton"
 						type="button"
-						title="Create a new random seed"
+						aria-label="Close settings"
 					>
-						↻
+						×
+					</button>
+				</div>
+
+				<div class="generator-section">
+					<p class="generator-section-title">Photo count</p>
+
+					<div class="count-mode-switch">
+						<button
+							class="count-mode-button active"
+							id="randomModeButton"
+							type="button"
+						>
+							Random range
+						</button>
+
+						<button
+							class="count-mode-button"
+							id="fixedModeButton"
+							type="button"
+						>
+							Fixed amount
+						</button>
+					</div>
+
+					<input
+						id="randomCountEnabled"
+						type="checkbox"
+						checked
+						hidden
+					>
+
+					<div class="generator-fields" id="randomCountFields">
+						<div class="generator-field">
+							<label for="minimumPhotoCount">Minimum photos</label>
+							<input
+								id="minimumPhotoCount"
+								type="number"
+								min="1"
+								max="100"
+								value="15"
+							>
+						</div>
+
+						<div class="generator-field">
+							<label for="maximumPhotoCount">Maximum photos</label>
+							<input
+								id="maximumPhotoCount"
+								type="number"
+								min="1"
+								max="100"
+								value="20"
+							>
+						</div>
+					</div>
+
+					<div
+						class="generator-fields single hidden"
+						id="fixedCountFields"
+					>
+						<div class="generator-field">
+							<label for="fixedPhotoCount">Number of photos</label>
+							<input
+								id="fixedPhotoCount"
+								type="number"
+								min="1"
+								max="100"
+								value="18"
+							>
+						</div>
+					</div>
+				</div>
+
+				<div class="generator-section">
+					<p class="generator-section-title">Seed</p>
+
+					<div class="generator-field">
+						<label for="wallpaperSeed">
+							Leave empty for a new random seed
+						</label>
+
+						<div class="seed-input-row">
+							<input
+								id="wallpaperSeed"
+								type="text"
+								placeholder="Example: 481739"
+								autocomplete="off"
+							>
+
+							<button
+								class="seed-randomize-button"
+								id="randomizeSeedButton"
+								type="button"
+								title="Generate a random seed"
+							>
+								↻
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<div class="generator-settings-footer">
+					<button
+						class="generator-footer-button"
+						id="cancelGeneratorSettingsButton"
+						type="button"
+					>
+						Cancel
+					</button>
+
+					<button
+						class="generator-footer-button primary"
+						id="saveGeneratorSettingsButton"
+						type="button"
+					>
+						Save settings
 					</button>
 				</div>
 			</div>
@@ -1485,18 +1731,30 @@
 			document.getElementById("minimumPhotoCount");
 		const maximumPhotoCount =
 			document.getElementById("maximumPhotoCount");
-		const fixedCountSetting =
-			document.getElementById("fixedCountSetting");
-		const minimumCountSetting =
-			document.getElementById("minimumCountSetting");
-		const maximumCountSetting =
-			document.getElementById("maximumCountSetting");
 		const wallpaperSeed =
 			document.getElementById("wallpaperSeed");
 		const randomizeSeedButton =
 			document.getElementById("randomizeSeedButton");
 		const previewSeed =
 			document.getElementById("previewSeed");
+		const openGeneratorSettingsButton =
+			document.getElementById("openGeneratorSettingsButton");
+		const generatorSettingsOverlay =
+			document.getElementById("generatorSettingsOverlay");
+		const closeGeneratorSettingsButton =
+			document.getElementById("closeGeneratorSettingsButton");
+		const cancelGeneratorSettingsButton =
+			document.getElementById("cancelGeneratorSettingsButton");
+		const saveGeneratorSettingsButton =
+			document.getElementById("saveGeneratorSettingsButton");
+		const randomModeButton =
+			document.getElementById("randomModeButton");
+		const fixedModeButton =
+			document.getElementById("fixedModeButton");
+		const randomCountFields =
+			document.getElementById("randomCountFields");
+		const fixedCountFields =
+			document.getElementById("fixedCountFields");
 		const zoomDisplay = document.getElementById("zoomDisplay");
 
 		let galleryImages = [];
@@ -1912,42 +2170,35 @@
 
 		function getGeneratorOptions() {
 			const availableCount = galleryImages.length;
-			const randomMode = randomCountEnabled.checked;
 
-			let minimum = clampInteger(
-				minimumPhotoCount.value,
-				1,
-				availableCount,
-				Math.min(15, availableCount)
-			);
-
-			let maximum = clampInteger(
-				maximumPhotoCount.value,
-				1,
-				availableCount,
-				Math.min(20, availableCount)
-			);
-
-			if (minimum > maximum) {
-				[minimum, maximum] = [maximum, minimum];
+			if (availableCount === 0) {
+				throw new Error("Choose a folder with images first.");
 			}
 
-			const fixed = clampInteger(
-				fixedPhotoCount.value,
-				1,
+			const minimum = Math.min(
 				availableCount,
-				Math.min(18, availableCount)
+				Math.max(1, savedGeneratorSettings.minimumCount)
 			);
 
-			let seed = wallpaperSeed.value.trim();
+			const maximum = Math.min(
+				availableCount,
+				Math.max(minimum, savedGeneratorSettings.maximumCount)
+			);
+
+			const fixed = Math.min(
+				availableCount,
+				Math.max(1, savedGeneratorSettings.fixedCount)
+			);
+
+			let seed = savedGeneratorSettings.seed.trim();
 
 			if (!seed) {
 				seed = createRandomSeed();
-				wallpaperSeed.value = seed;
+				savedGeneratorSettings.seed = seed;
 			}
 
 			const random = createSeededRandom(seed);
-			const count = randomMode
+			const count = savedGeneratorSettings.randomMode
 				? minimum + Math.floor(random() * (maximum - minimum + 1))
 				: fixed;
 
@@ -2293,7 +2544,8 @@
 		remakeWallpaperButton.addEventListener(
 			"click",
 			() => {
-				wallpaperSeed.value = createRandomSeed();
+				savedGeneratorSettings.seed = createRandomSeed();
+				wallpaperSeed.value = savedGeneratorSettings.seed;
 				generateMosaicBackground();
 			}
 		);
@@ -2310,46 +2562,121 @@
 		});
 
 		document.addEventListener("keydown", event => {
-			if (
-				event.key === "Escape" &&
-				wallpaperPreview.classList.contains("visible")
-			) {
+			if (event.key !== "Escape") {
+				return;
+			}
+
+			if (generatorSettingsOverlay.classList.contains("visible")) {
+				closeGeneratorSettings();
+				return;
+			}
+
+			if (wallpaperPreview.classList.contains("visible")) {
 				closeWallpaperPreview();
 			}
 		});
 
 
-		function updateGeneratorSettingState() {
-			const randomMode = randomCountEnabled.checked;
+		let savedGeneratorSettings = {
+			randomMode: true,
+			fixedCount: 18,
+			minimumCount: 15,
+			maximumCount: 20,
+			seed: ""
+		};
 
-			fixedCountSetting.classList.toggle(
-				"is-disabled",
-				randomMode
-			);
-			minimumCountSetting.classList.toggle(
-				"is-disabled",
-				!randomMode
-			);
-			maximumCountSetting.classList.toggle(
-				"is-disabled",
-				!randomMode
-			);
-
-			fixedPhotoCount.disabled = randomMode;
-			minimumPhotoCount.disabled = !randomMode;
-			maximumPhotoCount.disabled = !randomMode;
+		function setCountMode(randomMode) {
+			randomCountEnabled.checked = randomMode;
+			randomModeButton.classList.toggle("active", randomMode);
+			fixedModeButton.classList.toggle("active", !randomMode);
+			randomCountFields.classList.toggle("hidden", !randomMode);
+			fixedCountFields.classList.toggle("hidden", randomMode);
 		}
 
-		randomCountEnabled.addEventListener(
-			"change",
-			updateGeneratorSettingState
+		function openGeneratorSettings() {
+			fixedPhotoCount.value = savedGeneratorSettings.fixedCount;
+			minimumPhotoCount.value = savedGeneratorSettings.minimumCount;
+			maximumPhotoCount.value = savedGeneratorSettings.maximumCount;
+			wallpaperSeed.value = savedGeneratorSettings.seed;
+			setCountMode(savedGeneratorSettings.randomMode);
+
+			generatorSettingsOverlay.classList.add("visible");
+			generatorSettingsOverlay.setAttribute("aria-hidden", "false");
+		}
+
+		function closeGeneratorSettings() {
+			generatorSettingsOverlay.classList.remove("visible");
+			generatorSettingsOverlay.setAttribute("aria-hidden", "true");
+		}
+
+		function saveGeneratorSettings() {
+			let minimum = Math.max(
+				1,
+				Number.parseInt(minimumPhotoCount.value, 10) || 1
+			);
+
+			let maximum = Math.max(
+				1,
+				Number.parseInt(maximumPhotoCount.value, 10) || minimum
+			);
+
+			if (minimum > maximum) {
+				[minimum, maximum] = [maximum, minimum];
+			}
+
+			savedGeneratorSettings = {
+				randomMode: randomCountEnabled.checked,
+				fixedCount: Math.max(
+					1,
+					Number.parseInt(fixedPhotoCount.value, 10) || 1
+				),
+				minimumCount: minimum,
+				maximumCount: maximum,
+				seed: wallpaperSeed.value.trim()
+			};
+
+			closeGeneratorSettings();
+			showGalleryToast("Generator settings saved.");
+		}
+
+		openGeneratorSettingsButton.addEventListener(
+			"click",
+			openGeneratorSettings
 		);
+
+		closeGeneratorSettingsButton.addEventListener(
+			"click",
+			closeGeneratorSettings
+		);
+
+		cancelGeneratorSettingsButton.addEventListener(
+			"click",
+			closeGeneratorSettings
+		);
+
+		saveGeneratorSettingsButton.addEventListener(
+			"click",
+			saveGeneratorSettings
+		);
+
+		randomModeButton.addEventListener("click", () => {
+			setCountMode(true);
+		});
+
+		fixedModeButton.addEventListener("click", () => {
+			setCountMode(false);
+		});
 
 		randomizeSeedButton.addEventListener("click", () => {
 			wallpaperSeed.value = createRandomSeed();
 		});
 
-		updateGeneratorSettingState();
+		generatorSettingsOverlay.addEventListener("click", event => {
+			if (event.target === generatorSettingsOverlay) {
+				closeGeneratorSettings();
+			}
+		});
+
 
 		generateBackgroundButton.addEventListener(
 			"click",
