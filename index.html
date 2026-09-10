@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Trollmine</title>
+	<meta name="description" content="Trollmine — Roblox developer, creator and designer.">
+	<meta name="theme-color" content="#7c5cff">
+
+	<style>
+		@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+		:root {
+			--background: #07070c;
+			--card: rgba(18, 18, 29, 0.72);
+			--card-border: rgba(255, 255, 255, 0.1);
+			--text: #ffffff;
+			--muted: #a7a7b4;
+			--primary: #836fff;
+			--secondary: #ba68ff;
+			--accent: #58d6ff;
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		html {
+			scroll-behavior: smooth;
+		}
+
+		body {
+			min-height: 100vh;
+			overflow-x: hidden;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 92px 20px 42px;
+			background:
+				radial-gradient(circle at top, #181126 0%, var(--background) 48%),
+				var(--background);
+			color: var(--text);
+			font-family: "Inter", sans-serif;
+		}
+
+		.background-grid {
+			position: fixed;
+			inset: 0;
+			z-index: -5;
+			background-image:
+				linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+				linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+			background-size: 45px 45px;
+			mask-image: linear-gradient(to bottom, black, transparent 90%);
+		}
+
+		.noise {
+			position: fixed;
+			inset: 0;
+			z-index: -4;
+			opacity: .04;
+			pointer-events: none;
+			background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+		}
+
+		.blob {
+			position: fixed;
+			width: 420px;
+			height: 420px;
+			border-radius: 50%;
+			filter: blur(110px);
+			opacity: .28;
+			z-index: -3;
+			animation: floatBlob 12s ease-in-out infinite alternate;
+		}
+
+		.blob-one {
+			top: -140px;
+			left: -130px;
+			background: var(--primary);
+		}
+
+		.blob-two {
+			right: -150px;
+			bottom: -140px;
+			background: var(--secondary);
+			animation-delay: -4s;
+		}
+
+		.blob-three {
+			top: 40%;
+			left: 55%;
+			width: 280px;
+			height: 280px;
+			background: var(--accent);
+			opacity: .12;
+			animation-delay: -8s;
+		}
+
+		@keyframes floatBlob {
+			from { transform: translate3d(-20px,-15px,0) scale(1); }
+			to { transform: translate3d(45px,35px,0) scale(1.15); }
+		}
+
+		.site-tabs {
+			position: fixed;
+			top: 18px;
+			left: 50%;
+			z-index: 200;
+			display: flex;
+			gap: 6px;
+			padding: 6px;
+			transform: translateX(-50%);
+			border: 1px solid rgba(255,255,255,.12);
+			border-radius: 16px;
+			background: rgba(15,15,24,.84);
+			backdrop-filter: blur(18px);
+			box-shadow: 0 12px 35px rgba(0,0,0,.3);
+		}
+
+		.tab-button {
+			padding: 10px 18px;
+			border-radius: 11px;
+			color: #aaa7b6;
+			font-size: .88rem;
+			font-weight: 700;
+			text-decoration: none;
+			transition: .2s ease;
+		}
+
+		.tab-button:hover {
+			color: white;
+			transform: translateY(-1px);
+		}
+
+		.tab-button.active {
+			background: linear-gradient(135deg, #836fff, #6451d8);
+			color: white;
+			box-shadow: 0 6px 18px rgba(131,111,255,.35);
+		}
+
+		.page {
+			width: 100%;
+			max-width: 560px;
+			animation: pageEnter .9s cubic-bezier(.16,1,.3,1);
+		}
+
+		@keyframes pageEnter {
+			from { opacity: 0; transform: translateY(35px) scale(.97); }
+			to { opacity: 1; transform: translateY(0) scale(1); }
+		}
+
+		.card {
+			position: relative;
+			overflow: hidden;
+			padding: 34px;
+			border: 1px solid var(--card-border);
+			border-radius: 28px;
+			background: var(--card);
+			backdrop-filter: blur(24px);
+			box-shadow: 0 30px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08);
+		}
+
+		.card::before {
+			content: "";
+			position: absolute;
+			inset: 0;
+			padding: 1px;
+			border-radius: inherit;
+			background: linear-gradient(135deg, rgba(131,111,255,.65), transparent 35%, transparent 65%, rgba(88,214,255,.3));
+			-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+			-webkit-mask-composite: xor;
+			mask-composite: exclude;
+			pointer-events: none;
+		}
+
+		.card-glow {
+			position: absolute;
+			top: -180px;
+			left: 50%;
+			width: 420px;
+			height: 300px;
+			transform: translateX(-50%);
+			background: radial-gradient(circle, rgba(131,111,255,.26), transparent 70%);
+			pointer-events: none;
+		}
+
+		.profile {
+			position: relative;
+			z-index: 1;
+			text-align: center;
+		}
+
+		.avatar-wrapper {
+			position: relative;
+			width: 122px;
+			height: 122px;
+			margin: 0 auto 22px;
+		}
+
+		.avatar-ring {
+			position: absolute;
+			inset: -5px;
+			border-radius: 50%;
+			background: conic-gradient(from 0deg, var(--primary), var(--secondary), var(--accent), var(--primary));
+			animation: rotateRing 5s linear infinite;
+			filter: drop-shadow(0 0 12px rgba(131,111,255,.65));
+		}
+
+		.avatar-ring::after {
+			content: "";
+			position: absolute;
+			inset: 4px;
+			border-radius: 50%;
+			background: #0d0d16;
+		}
+
+		@keyframes rotateRing {
+			to { transform: rotate(360deg); }
+		}
+
+		.avatar {
+			position: absolute;
+			inset: 4px;
+			z-index: 2;
+			width: 114px;
+			height: 114px;
+			border: 4px solid #0d0d16;
+			border-radius: 50%;
+			object-fit: cover;
+			background: linear-gradient(135deg,#24243e,#12121d);
+		}
+
+		.status-dot {
+			position: absolute;
+			right: 7px;
+			bottom: 8px;
+			z-index: 3;
+			width: 23px;
+			height: 23px;
+			border: 5px solid #12121d;
+			border-radius: 50%;
+			background: #23d18b;
+			box-shadow: 0 0 14px rgba(35,209,139,.8);
+		}
+
+		.name-row {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 9px;
+		}
+
+		h1 {
+			font-size: clamp(2rem,8vw,2.8rem);
+			font-weight: 800;
+			letter-spacing: -1.8px;
+			background: linear-gradient(90deg,#fff 5%,#c9bfff 45%,#8ce8ff 100%);
+			-webkit-background-clip: text;
+			background-clip: text;
+			color: transparent;
+		}
+
+		.verified {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 23px;
+			height: 23px;
+			border-radius: 50%;
+			background: linear-gradient(135deg,var(--primary),var(--accent));
+			font-size: 13px;
+			font-weight: 800;
+		}
+
+		.username, .bio {
+			color: var(--muted);
+		}
+
+		.username {
+			margin-top: 5px;
+			font-size: .9rem;
+		}
+
+		.typing-line {
+			height: 28px;
+			margin-top: 18px;
+			color: #e8e5ff;
+			font-size: 1rem;
+			font-weight: 600;
+		}
+
+		.cursor {
+			margin-left: 2px;
+			color: var(--accent);
+			animation: blink .8s steps(1) infinite;
+		}
+
+		@keyframes blink {
+			50% { opacity: 0; }
+		}
+
+		.bio {
+			max-width: 420px;
+			margin: 13px auto 0;
+			font-size: .94rem;
+			line-height: 1.7;
+		}
+
+		.tags {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: center;
+			gap: 8px;
+			margin-top: 20px;
+		}
+
+		.tag {
+			padding: 7px 11px;
+			border: 1px solid rgba(255,255,255,.08);
+			border-radius: 999px;
+			background: rgba(255,255,255,.045);
+			color: #cac7d8;
+			font-size: .76rem;
+			font-weight: 600;
+		}
+
+		.divider {
+			height: 1px;
+			margin: 27px 0;
+			background: linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);
+		}
+
+		.links {
+			display: flex;
+			flex-direction: column;
+			gap: 13px;
+		}
+
+		.link-card {
+			position: relative;
+			display: flex;
+			align-items: center;
+			width: 100%;
+			min-height: 68px;
+			padding: 13px 17px;
+			overflow: hidden;
+			border: 1px solid rgba(255,255,255,.08);
+			border-radius: 18px;
+			background: rgba(255,255,255,.045);
+			color: white;
+			text-decoration: none;
+			transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s ease, background .25s ease;
+		}
+
+		.link-card:hover {
+			transform: translateY(-4px) scale(1.015);
+			border-color: rgba(131,111,255,.42);
+			background: rgba(131,111,255,.09);
+		}
+
+		.link-icon {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-shrink: 0;
+			width: 43px;
+			height: 43px;
+			margin-right: 14px;
+			border: 1px solid rgba(255,255,255,.08);
+			border-radius: 13px;
+			background: rgba(255,255,255,.07);
+			font-size: 1.25rem;
+		}
+
+		.link-info {
+			flex: 1;
+			text-align: left;
+		}
+
+		.link-title {
+			display: block;
+			font-size: .95rem;
+			font-weight: 700;
+		}
+
+		.link-description {
+			display: block;
+			margin-top: 3px;
+			color: var(--muted);
+			font-size: .76rem;
+		}
+
+		.link-arrow {
+			margin-left: 12px;
+			color: var(--muted);
+			font-size: 1.25rem;
+		}
+
+		.footer {
+			margin-top: 25px;
+			color: #676774;
+			font-size: .75rem;
+			text-align: center;
+		}
+
+		.ai-note {
+			margin-top: 14px;
+			padding: 11px 13px;
+			border: 1px solid rgba(255,255,255,.07);
+			border-radius: 12px;
+			background: rgba(255,255,255,.035);
+			color: #858593;
+			font-size: .72rem;
+			line-height: 1.55;
+			text-align: center;
+		}
+
+		.music-button {
+			position: fixed;
+			right: 22px;
+			bottom: 22px;
+			z-index: 220;
+			width: 48px;
+			height: 48px;
+			border: 1px solid rgba(255,255,255,.12);
+			border-radius: 15px;
+			background: rgba(18,18,29,.75);
+			backdrop-filter: blur(18px);
+			color: white;
+			font-size: 1.1rem;
+			cursor: pointer;
+		}
+
+		@media (max-width: 600px) {
+			body { align-items: flex-start; padding: 78px 14px 90px; }
+			.site-tabs { top: 10px; }
+			.card { padding: 28px 18px; border-radius: 24px; }
+		}
+	</style>
+</head>
+
+<body>
+	
+	<nav class="site-tabs" aria-label="Main navigation">
+		<a class="tab-button active" href="index.html">Home</a>
+		<a class="tab-button" href="portfolio.html">Portfolio</a>
+		<a class="tab-button" href="gallery.html">Gallery</a>
+	</nav>
+
+	<div class="background-grid"></div>
+	<div class="noise"></div>
+	<div class="blob blob-one"></div>
+	<div class="blob blob-two"></div>
+	<div class="blob blob-three"></div>
+
+	<main class="page">
+		<section class="card" id="profileCard">
+			<div class="card-glow"></div>
+
+			<div class="profile">
+				<div class="avatar-wrapper">
+					<div class="avatar-ring"></div>
+					<img class="avatar" src="avatar.png" alt="Trollmine profile picture">
+					<div class="status-dot" title="Online"></div>
+				</div>
+
+				<div class="name-row">
+					<h1>Trollmine</h1>
+					<span class="verified" title="Verified">✓</span>
+				</div>
+
+				<p class="username">@trollmine</p>
+
+				<div class="typing-line">
+					<span id="typingText"></span><span class="cursor">|</span>
+				</div>
+
+				<p class="bio">
+					Building games, interfaces and cool digital experiences.
+					Mostly working with Roblox Studio and turning random ideas into real projects.
+				</p>
+
+				<div class="tags">
+					<span class="tag">Roblox Developer</span>
+					<span class="tag">Lua</span>
+					<span class="tag">UI Designer</span>
+					<span class="tag">Game Creator</span>
+				</div>
+			</div>
+
+			<div class="divider"></div>
+
+			<div class="links">
+				<a class="link-card" href="https://discord.gg/h6HXbB6Mvs" target="_blank" rel="noopener noreferrer">
+					<div class="link-icon">💬</div>
+					<div class="link-info">
+						<span class="link-title">Discord</span>
+						<span class="link-description">Join my community</span>
+					</div>
+					<span class="link-arrow">›</span>
+				</a>
+
+				<a class="link-card" href="https://github.com/trollmine" target="_blank" rel="noopener noreferrer">
+					<div class="link-icon">⌨</div>
+					<div class="link-info">
+						<span class="link-title">GitHub</span>
+						<span class="link-description">Check out my projects</span>
+					</div>
+					<span class="link-arrow">›</span>
+				</a>
+
+				<a class="link-card" href="https://www.roblox.com/users/3522553826/profile" target="_blank" rel="noopener noreferrer">
+					<div class="link-icon">◈</div>
+					<div class="link-info">
+						<span class="link-title">Roblox</span>
+						<span class="link-description">View my Roblox profile</span>
+					</div>
+					<span class="link-arrow">›</span>
+				</a>
+
+				<a class="link-card" href="https://youtube.com/@TrollmineOFF" target="_blank" rel="noopener noreferrer">
+					<div class="link-icon">▶</div>
+					<div class="link-info">
+						<span class="link-title">YouTube</span>
+						<span class="link-description">Watch my content</span>
+					</div>
+					<span class="link-arrow">›</span>
+				</a>
+			</div>
+
+			<p class="footer">Made by Trollmine</p>
+			
+	<p class="ai-note">
+		This website was made with AI because I was too lazy to code it.
+		The projects shown here were not made with AI.
+	</p>
+
+		</section>
+	</main>
+
+	<button class="music-button" id="musicButton" type="button" title="Toggle background music">❚❚</button>
+	<audio id="backgroundMusic" preload="auto" loop>
+		<source src="./music.mp3" type="audio/mpeg">
+	</audio>
+
+	<script>
+		const typingText = document.getElementById("typingText");
+		const phrases = ["Roblox Developer", "Game Creator", "UI Designer", "Turning ideas into games"];
+		let phraseIndex = 0;
+		let characterIndex = 0;
+		let deleting = false;
+
+		function animateTyping() {
+			const phrase = phrases[phraseIndex];
+			typingText.textContent = phrase.substring(0, characterIndex);
+
+			if (!deleting && characterIndex < phrase.length) {
+				characterIndex++;
+				setTimeout(animateTyping, 75);
+			} else if (!deleting) {
+				deleting = true;
+				setTimeout(animateTyping, 1250);
+			} else if (characterIndex > 0) {
+				characterIndex--;
+				setTimeout(animateTyping, 38);
+			} else {
+				deleting = false;
+				phraseIndex = (phraseIndex + 1) % phrases.length;
+				setTimeout(animateTyping, 260);
+			}
+		}
+
+		animateTyping();
+
+		const musicButton = document.getElementById("musicButton");
+		const backgroundMusic = document.getElementById("backgroundMusic");
+		const MUSIC_PREFERENCE_KEY = "trollmineMusicEnabled";
+		let musicEnabled = localStorage.getItem(MUSIC_PREFERENCE_KEY) !== "off";
+
+		function updateMusicButton() {
+			const playing = musicEnabled && !backgroundMusic.paused;
+			musicButton.textContent = playing ? "❚❚" : "▶";
+			musicButton.title = playing ? "Pause background music" : "Play background music";
+		}
+
+		async function playMusic() {
+			if (!musicEnabled) return;
+			try { await backgroundMusic.play(); } catch {}
+			updateMusicButton();
+		}
+
+		musicButton.addEventListener("click", async event => {
+			event.stopPropagation();
+
+			if (musicEnabled && !backgroundMusic.paused) {
+				musicEnabled = false;
+				localStorage.setItem(MUSIC_PREFERENCE_KEY, "off");
+				backgroundMusic.pause();
+			} else {
+				musicEnabled = true;
+				localStorage.setItem(MUSIC_PREFERENCE_KEY, "on");
+				await playMusic();
+			}
+
+			updateMusicButton();
+		});
+
+		document.addEventListener("click", () => playMusic(), { once: true });
+		updateMusicButton();
+	</script>
+</body>
+</html>
