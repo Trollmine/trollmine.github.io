@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Trollmine — Portfolio</title>
+	<meta name="description" content="Trollmine's portfolio — games, music, art and development work.">
+	<meta name="theme-color" content="#7c5cff">
+
+	<style>
+		@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+		:root {
+			--background: #07070c;
+			--card: rgba(18,18,29,.72);
+			--text: #ffffff;
+			--muted: #a7a7b4;
+			--primary: #836fff;
+			--secondary: #ba68ff;
+			--accent: #58d6ff;
+		}
+
+		* { box-sizing: border-box; margin: 0; padding: 0; }
+
+		body {
+			min-height: 100vh;
+			padding: 110px 22px 60px;
+			background:
+				radial-gradient(circle at top, #181126 0%, var(--background) 46%),
+				var(--background);
+			color: var(--text);
+			font-family: "Inter", sans-serif;
+		}
+
+		.background-grid {
+			position: fixed;
+			inset: 0;
+			z-index: -3;
+			background-image:
+				linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+				linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+			background-size: 45px 45px;
+			mask-image: linear-gradient(to bottom, black, transparent 90%);
+		}
+
+		.site-tabs {
+			position: fixed;
+			top: 18px;
+			left: 50%;
+			z-index: 200;
+			display: flex;
+			gap: 6px;
+			padding: 6px;
+			transform: translateX(-50%);
+			border: 1px solid rgba(255,255,255,.12);
+			border-radius: 16px;
+			background: rgba(15,15,24,.84);
+			backdrop-filter: blur(18px);
+			box-shadow: 0 12px 35px rgba(0,0,0,.3);
+		}
+
+		.tab-button {
+			padding: 10px 18px;
+			border-radius: 11px;
+			color: #aaa7b6;
+			font-size: .88rem;
+			font-weight: 700;
+			text-decoration: none;
+			transition: .2s ease;
+		}
+
+		.tab-button:hover {
+			color: white;
+			transform: translateY(-1px);
+		}
+
+		.tab-button.active {
+			background: linear-gradient(135deg,#836fff,#6451d8);
+			color: white;
+			box-shadow: 0 6px 18px rgba(131,111,255,.35);
+		}
+
+		.portfolio {
+			width: min(1120px, 100%);
+			margin: 0 auto;
+		}
+
+		.hero {
+			max-width: 760px;
+			margin-bottom: 34px;
+		}
+
+		.eyebrow {
+			display: inline-flex;
+			padding: 7px 11px;
+			border: 1px solid rgba(131,111,255,.28);
+			border-radius: 999px;
+			background: rgba(131,111,255,.08);
+			color: #c9bfff;
+			font-size: .75rem;
+			font-weight: 800;
+			letter-spacing: .06em;
+			text-transform: uppercase;
+		}
+
+		h1 {
+			margin-top: 14px;
+			font-size: clamp(2.6rem,7vw,5rem);
+			line-height: .98;
+			letter-spacing: -4px;
+			background: linear-gradient(90deg,#fff,#c9bfff 55%,#8ce8ff);
+			-webkit-background-clip: text;
+			background-clip: text;
+			color: transparent;
+		}
+
+		.hero p {
+			margin-top: 18px;
+			max-width: 650px;
+			color: var(--muted);
+			font-size: 1rem;
+			line-height: 1.75;
+		}
+
+		.project-grid {
+			display: grid;
+			grid-template-columns: repeat(2,minmax(0,1fr));
+			gap: 18px;
+		}
+
+		.project-card {
+			position: relative;
+			overflow: hidden;
+			min-height: 300px;
+			padding: 26px;
+			border: 1px solid rgba(255,255,255,.1);
+			border-radius: 24px;
+			background: var(--card);
+			backdrop-filter: blur(22px);
+			box-shadow: 0 24px 60px rgba(0,0,0,.28);
+			transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s ease;
+		}
+
+		.project-card:hover {
+			transform: translateY(-5px);
+			border-color: rgba(131,111,255,.38);
+		}
+
+		.project-card.featured {
+			grid-column: 1 / -1;
+			min-height: 330px;
+		}
+
+		.project-glow {
+			position: absolute;
+			width: 260px;
+			height: 260px;
+			top: -110px;
+			right: -90px;
+			border-radius: 50%;
+			background: var(--primary);
+			filter: blur(90px);
+			opacity: .18;
+			pointer-events: none;
+		}
+
+		.project-number {
+			color: #77778a;
+			font-size: .72rem;
+			font-weight: 800;
+			letter-spacing: .08em;
+		}
+
+		.project-card h2 {
+			margin-top: 42px;
+			font-size: clamp(1.5rem,4vw,2.2rem);
+			letter-spacing: -1px;
+		}
+
+		.project-card p {
+			margin-top: 12px;
+			max-width: 670px;
+			color: var(--muted);
+			font-size: .92rem;
+			line-height: 1.7;
+		}
+
+		.project-tags {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 7px;
+			margin-top: 20px;
+		}
+
+		.project-tag {
+			padding: 6px 9px;
+			border: 1px solid rgba(255,255,255,.08);
+			border-radius: 999px;
+			background: rgba(255,255,255,.045);
+			color: #cbc8d9;
+			font-size: .72rem;
+			font-weight: 700;
+		}
+
+		.project-actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 9px;
+			margin-top: 24px;
+		}
+
+		.project-link {
+			display: inline-flex;
+			align-items: center;
+			min-height: 40px;
+			padding: 0 14px;
+			border: 1px solid rgba(255,255,255,.1);
+			border-radius: 11px;
+			background: rgba(255,255,255,.06);
+			color: white;
+			font-size: .8rem;
+			font-weight: 800;
+			text-decoration: none;
+			transition: .2s ease;
+		}
+
+		.project-link.primary {
+			border-color: transparent;
+			background: linear-gradient(135deg,#836fff,#6451d8);
+		}
+
+		.project-link:hover {
+			transform: translateY(-2px);
+			background-color: rgba(255,255,255,.1);
+		}
+
+		.ai-note {
+			max-width: 740px;
+			margin: 34px auto 0;
+			padding: 13px 16px;
+			border: 1px solid rgba(255,255,255,.07);
+			border-radius: 13px;
+			background: rgba(255,255,255,.035);
+			color: #858593;
+			font-size: .74rem;
+			line-height: 1.6;
+			text-align: center;
+		}
+
+		@media (max-width: 760px) {
+			body { padding: 92px 14px 40px; }
+			.site-tabs { top: 10px; }
+			.project-grid { grid-template-columns: 1fr; }
+			.project-card.featured { grid-column: auto; }
+			h1 { letter-spacing: -2.5px; }
+		}
+	</style>
+</head>
+
+<body>
+	<nav class="site-tabs" aria-label="Main navigation">
+		<a class="tab-button" href="index.html">Home</a>
+		<a class="tab-button active" href="portfolio.html">Portfolio</a>
+		<a class="tab-button" href="gallery.html">Gallery</a>
+	</nav>
+
+	<div class="background-grid"></div>
+
+	<main class="portfolio">
+		<header class="hero">
+			<span class="eyebrow">My work</span>
+			<h1>Portfolio</h1>
+			<p>
+				A selection of the games, systems, music and visual work I've made.
+				This page is kept separate from the gallery so the actual projects don't get buried under personal media.
+			</p>
+		</header>
+
+		<section class="project-grid">
+			<article class="project-card featured">
+				<div class="project-glow"></div>
+				<span class="project-number">01 / GAME DEVELOPMENT</span>
+				<h2>Insect Cluster Simulator</h2>
+				<p>
+					A Roblox simulator project inspired by the collection-and-progression style of Bee Swarm Simulator,
+					with custom insect systems, equipment, fields, tokens, quests, UI, movement and original world design.
+				</p>
+				<div class="project-tags">
+					<span class="project-tag">Roblox Studio</span>
+					<span class="project-tag">Luau</span>
+					<span class="project-tag">Game Systems</span>
+					<span class="project-tag">UI</span>
+					<span class="project-tag">3D</span>
+				</div>
+				<div class="project-actions">
+					<a class="project-link primary" href="https://github.com/Trollmine/Bee-Swarm-Like" target="_blank" rel="noopener noreferrer">View project</a>
+				</div>
+			</article>
+
+			<article class="project-card">
+				<div class="project-glow"></div>
+				<span class="project-number">02 / MUSIC</span>
+				<h2>Original Game Soundtracks</h2>
+				<p>
+					Original themes composed for game zones, shops and encounters, made with MuseScore and Audacity.
+				</p>
+				<div class="project-tags">
+					<span class="project-tag">Composition</span>
+					<span class="project-tag">MuseScore</span>
+					<span class="project-tag">Audacity</span>
+					<span class="project-tag">Game Audio</span>
+				</div>
+			</article>
+
+			<article class="project-card">
+				<div class="project-glow"></div>
+				<span class="project-number">03 / VISUALS</span>
+				<h2>Low-poly Game Art</h2>
+				<p>
+					Low-poly environments, props, UI icons and other visual assets made for my game projects.
+				</p>
+				<div class="project-tags">
+					<span class="project-tag">Blender</span>
+					<span class="project-tag">Low-poly</span>
+					<span class="project-tag">UI Icons</span>
+					<span class="project-tag">Environment Art</span>
+				</div>
+			</article>
+		</section>
+
+		
+	<p class="ai-note">
+		This website was made with AI because I was too lazy to code it.
+		The projects shown here were not made with AI.
+	</p>
+
+	</main>
+</body>
+</html>

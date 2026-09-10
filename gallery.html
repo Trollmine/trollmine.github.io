@@ -1,0 +1,5365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Trollmine — Gallery</title>
+	<meta name="description" content="Trollmine's local media gallery and wallpaper generator.">
+	<meta name="theme-color" content="#7c5cff">
+
+	<style>
+		@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		html, body {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			font-family: "Inter", sans-serif;
+		}
+
+
+		.site-tabs {
+			position: fixed;
+			top: 18px;
+			left: 50%;
+			z-index: 6000;
+			display: flex;
+			gap: 6px;
+			padding: 6px;
+			transform: translateX(-50%);
+			border: 1px solid rgba(255,255,255,.13);
+			border-radius: 16px;
+			background: rgba(15,15,24,.88);
+			backdrop-filter: blur(18px);
+			box-shadow: 0 12px 35px rgba(0,0,0,.28);
+		}
+
+		.tab-button {
+			padding: 10px 18px;
+			border-radius: 11px;
+			color: #aaa7b6;
+			font-size: .88rem;
+			font-weight: 700;
+			text-decoration: none;
+			transition: .2s ease;
+		}
+
+		.tab-button:hover {
+			color: white;
+			transform: translateY(-1px);
+		}
+
+		.tab-button.active {
+			background: linear-gradient(135deg,#836fff,#6451d8);
+			color: white;
+		}
+
+		.gallery-ai-note {
+			position: fixed;
+			right: 14px;
+			bottom: 14px;
+			z-index: 180;
+			max-width: 360px;
+			padding: 9px 11px;
+			border-radius: 10px;
+			background: rgba(17,17,17,.78);
+			color: rgba(255,255,255,.68);
+			font: 600 .68rem/1.45 "Inter", sans-serif;
+			pointer-events: none;
+			backdrop-filter: blur(10px);
+		}
+
+		.photo-state-actions,
+		.photo-state-button {
+			display: none !important;
+		}
+
+/* Gallery */
+
+		#galleryPage {
+			position: fixed;
+			inset: 0;
+			z-index: 50;
+			overflow: hidden;
+			background: #ffffff;
+			color: #111111;
+		}
+
+		.gallery-toolbar {
+			position: fixed;
+			top: 82px;
+			left: 50%;
+			z-index: 150;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 8px;
+			transform: translateX(-50%);
+			border: 1px solid rgba(0, 0, 0, 0.1);
+			border-radius: 16px;
+			background: rgba(255, 255, 255, 0.92);
+			backdrop-filter: blur(14px);
+			-webkit-backdrop-filter: blur(14px);
+			box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12);
+		}
+
+
+		.generator-settings-overlay {
+			position: fixed;
+			inset: 0;
+			z-index: 320;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			padding: 20px;
+			background: rgba(0, 0, 0, 0.46);
+			backdrop-filter: blur(7px);
+			-webkit-backdrop-filter: blur(7px);
+		}
+
+		.generator-settings-overlay.visible {
+			display: flex;
+		}
+
+		.generator-settings-card {
+			width: min(520px, 100%);
+			max-height: calc(100vh - 40px);
+			overflow-y: auto;
+			padding: 22px;
+			border: 1px solid rgba(0, 0, 0, 0.1);
+			border-radius: 20px;
+			background: #ffffff;
+			color: #111111;
+			box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+		}
+
+		.generator-settings-header {
+			display: flex;
+			align-items: flex-start;
+			justify-content: space-between;
+			gap: 16px;
+			margin-bottom: 20px;
+		}
+
+		.generator-settings-title {
+			margin: 0;
+			font-size: 1.25rem;
+			font-weight: 850;
+		}
+
+		.generator-settings-description {
+			margin: 5px 0 0;
+			color: #6b6b6b;
+			font-size: 0.84rem;
+			line-height: 1.45;
+		}
+
+		.close-generator-settings {
+			flex: 0 0 auto;
+			width: 38px;
+			height: 38px;
+			border: 1px solid rgba(0, 0, 0, 0.12);
+			border-radius: 11px;
+			background: #f5f5f5;
+			color: #111111;
+			font-family: inherit;
+			font-size: 1.25rem;
+			font-weight: 700;
+			cursor: pointer;
+		}
+
+		.generator-section {
+			padding: 16px;
+			border: 1px solid rgba(0, 0, 0, 0.1);
+			border-radius: 15px;
+			background: #fafafa;
+		}
+
+		.generator-section + .generator-section {
+			margin-top: 12px;
+		}
+
+		.generator-section-title {
+			margin: 0 0 12px;
+			font-size: 0.78rem;
+			font-weight: 850;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+			color: #555555;
+		}
+
+		.count-mode-switch {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 8px;
+			padding: 4px;
+			border-radius: 12px;
+			background: #ededed;
+		}
+
+		.count-mode-button {
+			height: 40px;
+			border: 0;
+			border-radius: 9px;
+			background: transparent;
+			color: #666666;
+			font-family: inherit;
+			font-size: 0.86rem;
+			font-weight: 800;
+			cursor: pointer;
+		}
+
+		.count-mode-button.active {
+			background: #ffffff;
+			color: #111111;
+			box-shadow: 0 2px 9px rgba(0, 0, 0, 0.1);
+		}
+
+		.generator-fields {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 12px;
+			margin-top: 14px;
+		}
+
+		.generator-fields.single {
+			grid-template-columns: 1fr;
+		}
+
+		.generator-field {
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+		}
+
+		.generator-field.hidden {
+			display: none;
+		}
+
+		.generator-field label {
+			color: #555555;
+			font-size: 0.75rem;
+			font-weight: 800;
+		}
+
+		.generator-field input {
+			width: 100%;
+			height: 43px;
+			padding: 0 12px;
+			border: 1px solid rgba(0, 0, 0, 0.16);
+			border-radius: 10px;
+			outline: none;
+			background: #ffffff;
+			color: #111111;
+			font: inherit;
+			font-weight: 750;
+		}
+
+		.generator-field input:focus {
+			border-color: #7662e5;
+			box-shadow: 0 0 0 3px rgba(118, 98, 229, 0.14);
+		}
+
+		.seed-input-row {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
+			gap: 8px;
+		}
+
+		.seed-randomize-button {
+			width: 43px;
+			height: 43px;
+			border: 1px solid rgba(0, 0, 0, 0.14);
+			border-radius: 10px;
+			background: #ffffff;
+			color: #111111;
+			font-family: inherit;
+			font-size: 1.1rem;
+			font-weight: 800;
+			cursor: pointer;
+		}
+
+		.generator-settings-footer {
+			display: flex;
+			justify-content: flex-end;
+			gap: 9px;
+			margin-top: 18px;
+		}
+
+		.generator-footer-button {
+			height: 43px;
+			padding: 0 18px;
+			border: 1px solid rgba(0, 0, 0, 0.12);
+			border-radius: 11px;
+			background: #f3f3f3;
+			color: #111111;
+			font-family: inherit;
+			font-size: 0.86rem;
+			font-weight: 850;
+			cursor: pointer;
+		}
+
+		.generator-footer-button.primary {
+			border-color: transparent;
+			background: linear-gradient(135deg, #836fff, #6451d8);
+			color: #ffffff;
+		}
+
+		.preview-seed {
+			margin: 10px 0 0;
+			text-align: center;
+			font-size: 0.82rem;
+			font-weight: 700;
+			color: #555555;
+		}
+
+		@media (max-width: 520px) {
+			.generator-settings-overlay {
+				align-items: flex-end;
+				padding: 0;
+			}
+
+			.generator-settings-card {
+				width: 100%;
+				max-height: 88vh;
+				border-radius: 20px 20px 0 0;
+			}
+
+			.generator-fields {
+				grid-template-columns: 1fr;
+			}
+		}
+
+
+		.gallery-control {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			min-width: 42px;
+			height: 42px;
+			padding: 0 14px;
+			border: 1px solid rgba(0, 0, 0, 0.1);
+			border-radius: 11px;
+			background: #ffffff;
+			color: #111111;
+			font-family: inherit;
+			font-size: 0.84rem;
+			font-weight: 700;
+			cursor: pointer;
+			white-space: nowrap;
+			transition:
+				transform 0.2s ease,
+				background 0.2s ease;
+		}
+
+		.gallery-control:hover {
+			transform: translateY(-2px);
+			background: #f1f1f1;
+		}
+
+		.choose-folder-button {
+			background: #111111;
+			color: #ffffff;
+		}
+
+		.choose-folder-button:hover {
+			background: #292929;
+		}
+
+		.generate-background-button {
+			background: linear-gradient(135deg, #836fff, #6451d8);
+			border-color: transparent;
+			color: #ffffff;
+		}
+
+		.generate-background-button:hover {
+			background: linear-gradient(135deg, #927fff, #715ee8);
+		}
+
+		.generate-background-button:disabled {
+			opacity: 0.55;
+			cursor: wait;
+			transform: none;
+		}
+
+		.gallery-toast {
+			position: fixed;
+			left: 50%;
+			bottom: 24px;
+			z-index: 210;
+			max-width: calc(100vw - 32px);
+			padding: 12px 16px;
+			transform: translate(-50%, 18px);
+			border-radius: 12px;
+			background: rgba(17, 17, 17, 0.92);
+			color: #ffffff;
+			font-size: 0.84rem;
+			font-weight: 700;
+			opacity: 0;
+			pointer-events: none;
+			transition:
+				opacity 0.2s ease,
+				transform 0.2s ease;
+		}
+
+		.gallery-toast.visible {
+			opacity: 1;
+			transform: translate(-50%, 0);
+		}
+
+		.wallpaper-preview {
+			position: fixed;
+			inset: 0;
+			z-index: 500;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			padding: 24px;
+			background: rgba(0, 0, 0, 0.72);
+			backdrop-filter: blur(8px);
+			-webkit-backdrop-filter: blur(8px);
+		}
+
+		.wallpaper-preview.visible {
+			display: flex;
+		}
+
+		.wallpaper-preview-card {
+			width: min(1100px, 96vw);
+			max-height: 94vh;
+			padding: 14px;
+			border-radius: 18px;
+			background: #ffffff;
+			box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+		}
+
+		.wallpaper-preview-image {
+			display: block;
+			width: 100%;
+			max-height: calc(94vh - 92px);
+			aspect-ratio: 16 / 9;
+			object-fit: contain;
+			border-radius: 10px;
+			background: #f2f2f2;
+		}
+
+		.wallpaper-preview-actions {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: center;
+			gap: 10px;
+			margin-top: 12px;
+		}
+
+		.wallpaper-action {
+			min-width: 140px;
+			height: 44px;
+			padding: 0 18px;
+			border: 1px solid rgba(0, 0, 0, 0.12);
+			border-radius: 11px;
+			background: #ffffff;
+			color: #111111;
+			font-family: inherit;
+			font-size: 0.88rem;
+			font-weight: 800;
+			cursor: pointer;
+		}
+
+		.wallpaper-action.primary {
+			border-color: transparent;
+			background: linear-gradient(135deg, #836fff, #6451d8);
+			color: #ffffff;
+		}
+
+		.wallpaper-action:hover {
+			transform: translateY(-1px);
+		}
+
+		@media (max-width: 600px) {
+			.wallpaper-preview {
+				padding: 10px;
+			}
+
+			.wallpaper-preview-card {
+				padding: 10px;
+			}
+
+			.wallpaper-action {
+				flex: 1;
+				min-width: 110px;
+			}
+		}
+
+		#folderInput {
+			display: none;
+		}
+
+		.gallery-info {
+			min-width: 64px;
+			color: #555555;
+			font-size: 0.78rem;
+			font-weight: 700;
+			text-align: center;
+		}
+
+		.gallery-viewport {
+			position: absolute;
+			inset: 0;
+			overflow: hidden;
+			cursor: grab;
+			touch-action: none;
+			user-select: none;
+		}
+
+		.gallery-viewport.dragging {
+			cursor: grabbing;
+		}
+
+		.gallery-world {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			min-height: 100%;
+			padding: 148px 8px 40px;
+			transform-origin: 0 0;
+			will-change: transform;
+		}
+
+		.gallery-grid {
+			position: relative;
+			width: 100%;
+			min-height: 100px;
+		}
+
+		.gallery-item {
+			position: absolute;
+			overflow: hidden;
+			border-radius: 2px;
+			background: #eeeeee;
+			box-shadow: 0 1px 4px rgba(0, 0, 0, 0.09);
+			transition:
+				opacity 0.18s ease,
+				filter 0.18s ease,
+				box-shadow 0.18s ease;
+		}
+
+		.gallery-item.favorite {
+			box-shadow:
+				0 0 0 4px #836fff,
+				0 8px 24px rgba(131, 111, 255, 0.32);
+		}
+
+		.gallery-item.favorite::after,
+		.gallery-item.disabled::after {
+			position: absolute;
+			top: 8px;
+			left: 8px;
+			z-index: 3;
+			padding: 6px 9px;
+			border-radius: 8px;
+			color: #ffffff;
+			font-size: 0.68rem;
+			font-weight: 850;
+			letter-spacing: 0.04em;
+			pointer-events: none;
+		}
+
+		.gallery-item.favorite::after {
+			content: "FAVORITE";
+			background: rgba(102, 75, 225, 0.92);
+		}
+
+		.gallery-item.disabled {
+			opacity: 0.32;
+			filter: grayscale(1);
+		}
+
+		.gallery-item.disabled::after {
+			content: "DISABLED";
+			background: rgba(20, 20, 20, 0.9);
+		}
+
+		.gallery-item img {
+			display: block;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			pointer-events: none;
+		}
+
+		.gallery-item video {
+			display: block;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			background: #111111;
+			cursor: pointer;
+		}
+
+		.gallery-item.video-playing {
+			box-shadow:
+				0 0 0 3px #58d6ff,
+				0 8px 24px rgba(88, 214, 255, 0.28);
+		}
+
+		.wallpaper-preview-video {
+			display: none;
+			width: 100%;
+			max-height: calc(94vh - 92px);
+			aspect-ratio: 16 / 9;
+			object-fit: contain;
+			border-radius: 10px;
+			background: #111111;
+		}
+
+		.wallpaper-action:disabled {
+			opacity: 0.55;
+			cursor: wait;
+			transform: none;
+		}
+
+		.gallery-empty {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			width: min(90%, 520px);
+			transform: translate(-50%, -50%);
+			color: #666666;
+			text-align: center;
+			pointer-events: none;
+		}
+
+		.gallery-empty-icon {
+			margin-bottom: 18px;
+			font-size: 4rem;
+		}
+
+		.gallery-empty h2 {
+			margin-bottom: 10px;
+			color: #111111;
+			font-size: 1.7rem;
+		}
+
+		.gallery-empty p {
+			line-height: 1.6;
+		}
+
+		.gallery-file-name {
+			display: none;
+		}
+
+
+		@media (max-width: 1100px) {
+			.gallery-grid {
+				column-count: 4;
+			}
+		}
+
+		@media (max-width: 800px) {
+			.gallery-grid {
+				column-count: 3;
+			}
+		}
+
+		@media (max-width: 600px) {
+			body {
+				align-items: flex-start;
+				padding: 78px 14px 90px;
+			}
+
+			.site-tabs {
+				top: 10px;
+			}
+
+			.card {
+				padding: 28px 18px;
+				border-radius: 24px;
+			}
+
+			.avatar-wrapper {
+				width: 108px;
+				height: 108px;
+			}
+
+			.avatar {
+				width: 100px;
+				height: 100px;
+			}
+
+			.link-card {
+				min-height: 64px;
+				padding: 11px 13px;
+			}
+
+			.link-icon {
+				width: 40px;
+				height: 40px;
+			}
+
+			.gallery-toolbar {
+				top: 68px;
+				max-width: calc(100vw - 16px);
+				overflow-x: auto;
+			}
+
+			.gallery-grid {
+				column-count: 2;
+			}
+
+			.gallery-world {
+				padding-top: 130px;
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			* {
+				animation-duration: 0.01ms !important;
+				animation-iteration-count: 1 !important;
+				scroll-behavior: auto !important;
+			}
+		}
+	
+	</style>
+
+<style>
+		.gallery-item.selected {
+			box-shadow: 0 0 0 4px #111111, 0 0 0 7px #ffffff;
+			z-index: 5;
+		}
+
+		.gallery-item.tag-hidden {
+			display: none !important;
+		}
+
+		.gallery-viewport.space-pan {
+			cursor: grab;
+		}
+
+		.gallery-viewport.space-pan.dragging {
+			cursor: grabbing;
+		}
+
+		.drop-overlay {
+			position: fixed;
+			inset: 0;
+			display: grid;
+			place-items: center;
+			padding: 24px;
+			background: rgba(88, 214, 255, 0.2);
+			backdrop-filter: blur(8px);
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 160ms ease;
+			z-index: 5000;
+		}
+
+		.drop-overlay.visible {
+			opacity: 1;
+		}
+
+		.drop-overlay-card {
+			display: grid;
+			gap: 8px;
+			min-width: min(480px, 90vw);
+			padding: 34px;
+			border: 3px dashed #111111;
+			border-radius: 22px;
+			background: #ffffff;
+			text-align: center;
+			box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+		}
+
+		.drop-overlay-card strong {
+			font-size: 1.45rem;
+		}
+
+		.drop-overlay-card span {
+			opacity: 0.65;
+		}
+
+		.feature-overlay {
+			position: fixed;
+			inset: 0;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			padding: 24px;
+			background: rgba(0, 0, 0, 0.48);
+			backdrop-filter: blur(8px);
+			z-index: 4800;
+		}
+
+		.feature-overlay.visible {
+			display: flex;
+		}
+
+		.feature-card {
+			width: min(720px, 94vw);
+			max-height: 88vh;
+			overflow: auto;
+			padding: 22px;
+			border: 2px solid #111111;
+			border-radius: 18px;
+			background: #ffffff;
+			box-shadow: 0 28px 80px rgba(0, 0, 0, 0.3);
+		}
+
+		.similar-card {
+			width: min(980px, 94vw);
+		}
+
+		.feature-header,
+		.feature-section-heading {
+			display: flex;
+			align-items: flex-start;
+			justify-content: space-between;
+			gap: 16px;
+		}
+
+		.feature-header h2,
+		.feature-section h3 {
+			margin: 0;
+		}
+
+		.feature-header p {
+			margin: 5px 0 0;
+			opacity: 0.62;
+			word-break: break-word;
+		}
+
+		.feature-close {
+			width: 38px;
+			height: 38px;
+			flex: 0 0 auto;
+			border: 0;
+			border-radius: 50%;
+			background: #eeeeee;
+			font-size: 1.55rem;
+			cursor: pointer;
+		}
+
+		.feature-section {
+			margin-top: 22px;
+			padding-top: 20px;
+			border-top: 1px solid #dddddd;
+		}
+
+		.tag-input-row {
+			display: grid;
+			grid-template-columns: 1fr auto;
+			gap: 9px;
+			margin-top: 12px;
+		}
+
+		.tag-input-row input,
+		.tag-input-row button,
+		.small-feature-button {
+			min-height: 40px;
+			padding: 0 13px;
+			border: 1px solid #bbbbbb;
+			border-radius: 10px;
+			background: #ffffff;
+			font: inherit;
+		}
+
+		.tag-input-row button,
+		.small-feature-button {
+			cursor: pointer;
+			font-weight: 700;
+		}
+
+		.tag-list {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			margin-top: 13px;
+		}
+
+		.tag-chip {
+			display: inline-flex;
+			align-items: center;
+			gap: 7px;
+			min-height: 34px;
+			padding: 5px 10px;
+			border: 1px solid #c8c8c8;
+			border-radius: 999px;
+			background: #f5f5f5;
+			font-size: 0.9rem;
+			cursor: pointer;
+		}
+
+		.tag-chip.active {
+			border-color: #111111;
+			background: #111111;
+			color: #ffffff;
+		}
+
+		.tag-chip-remove {
+			font-weight: 900;
+			opacity: 0.62;
+		}
+
+		.statistics-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 12px;
+			margin-top: 22px;
+		}
+
+		.statistic-card {
+			padding: 16px;
+			border: 1px solid #d3d3d3;
+			border-radius: 13px;
+			background: #fafafa;
+		}
+
+		.statistic-label {
+			display: block;
+			margin-bottom: 5px;
+			opacity: 0.58;
+			font-size: 0.82rem;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		.statistic-value {
+			display: block;
+			font-size: 1.13rem;
+			font-weight: 800;
+			overflow-wrap: anywhere;
+		}
+
+		.similar-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+			gap: 12px;
+			margin-top: 22px;
+		}
+
+		.similar-result {
+			display: grid;
+			grid-template-rows: 130px auto;
+			overflow: hidden;
+			padding: 0;
+			border: 1px solid #cccccc;
+			border-radius: 12px;
+			background: #ffffff;
+			cursor: pointer;
+			text-align: left;
+		}
+
+		.similar-result img,
+		.similar-result video {
+			width: 100%;
+			height: 130px;
+			object-fit: cover;
+			background: #111111;
+		}
+
+		.similar-result-info {
+			display: grid;
+			gap: 4px;
+			padding: 10px;
+		}
+
+		.similar-result-name {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			font-weight: 750;
+		}
+
+		.similar-result-score {
+			opacity: 0.58;
+			font-size: 0.82rem;
+		}
+
+		@media (max-width: 620px) {
+			.statistics-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+</style>
+
+<style>
+	.gallery-item {
+		cursor: pointer;
+		touch-action: manipulation;
+	}
+
+	.gallery-item video {
+		pointer-events: auto !important;
+	}
+
+	.gallery-item img {
+		pointer-events: none;
+	}
+</style>
+
+</head>
+
+<body>
+	<nav class="site-tabs" aria-label="Main navigation">
+		<a class="tab-button" href="index.html">Home</a>
+		<a class="tab-button" href="portfolio.html">Portfolio</a>
+		<a class="tab-button active" href="gallery.html">Gallery</a>
+	</nav>
+
+	<section id="galleryPage" class="active">
+		<div class="gallery-toolbar">
+			<label class="gallery-control choose-folder-button" for="folderInput">
+				Choose Folder
+			</label>
+
+			<input
+				id="folderInput"
+				type="file"
+				accept="image/*,video/*"
+				webkitdirectory
+				directory
+				multiple
+			>
+
+			<button class="gallery-control" id="zoomOutButton" type="button" title="Zoom out">−</button>
+			<div class="gallery-info" id="zoomDisplay">100%</div>
+			<button class="gallery-control" id="zoomInButton" type="button" title="Zoom in">+</button>
+			<button class="gallery-control" id="resetGalleryButton" type="button">Reset</button>
+			<button class="gallery-control" id="tagsButton" type="button" title="Edit tags and filter the gallery">Tags</button>
+			<button class="gallery-control" id="similarButton" type="button" title="Find media similar to the selected item">Similar</button>
+			<button class="gallery-control" id="statisticsButton" type="button" title="View folder statistics">Statistics</button>
+			<button
+				class="gallery-control"
+				id="openGeneratorSettingsButton"
+				type="button"
+				title="Wallpaper generator settings"
+			>
+				Settings
+			</button>
+
+			<button
+				class="gallery-control generate-background-button"
+				id="generateBackgroundButton"
+				type="button"
+				title="Create a 2560 × 1440 mosaic wallpaper"
+			>
+				Generate Background
+			</button>
+		</div>
+
+
+		<div
+			class="generator-settings-overlay"
+			id="generatorSettingsOverlay"
+			aria-hidden="true"
+		>
+			<div
+				class="generator-settings-card"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="generatorSettingsTitle"
+			>
+				<div class="generator-settings-header">
+					<div>
+						<h2
+							class="generator-settings-title"
+							id="generatorSettingsTitle"
+						>
+							Wallpaper Generator
+						</h2>
+						<p class="generator-settings-description">
+							Choose how many media items the wallpaper should use and
+							set a seed to recreate the same result later.
+						</p>
+					</div>
+
+					<button
+						class="close-generator-settings"
+						id="closeGeneratorSettingsButton"
+						type="button"
+						aria-label="Close settings"
+					>
+						×
+					</button>
+				</div>
+
+				<div class="generator-section">
+					<p class="generator-section-title">Photo count</p>
+
+					<div class="count-mode-switch">
+						<button
+							class="count-mode-button active"
+							id="randomModeButton"
+							type="button"
+						>
+							Random range
+						</button>
+
+						<button
+							class="count-mode-button"
+							id="fixedModeButton"
+							type="button"
+						>
+							Fixed amount
+						</button>
+					</div>
+
+					<input
+						id="randomCountEnabled"
+						type="checkbox"
+						checked
+						hidden
+					>
+
+					<div class="generator-fields" id="randomCountFields">
+						<div class="generator-field">
+							<label for="minimumPhotoCount">Minimum media</label>
+							<input
+								id="minimumPhotoCount"
+								type="number"
+								min="1"
+								max="100"
+								value="15"
+							>
+						</div>
+
+						<div class="generator-field">
+							<label for="maximumPhotoCount">Maximum media</label>
+							<input
+								id="maximumPhotoCount"
+								type="number"
+								min="1"
+								max="100"
+								value="20"
+							>
+						</div>
+					</div>
+
+					<div
+						class="generator-fields single hidden"
+						id="fixedCountFields"
+					>
+						<div class="generator-field">
+							<label for="fixedPhotoCount">Number of media items</label>
+							<input
+								id="fixedPhotoCount"
+								type="number"
+								min="1"
+								max="100"
+								value="18"
+							>
+						</div>
+					</div>
+				</div>
+
+				<div class="generator-section">
+					<p class="generator-section-title">Seed</p>
+
+					<div class="generator-field">
+						<label for="wallpaperSeed">
+							Leave empty for a new random seed
+						</label>
+
+						<div class="seed-input-row">
+							<input
+								id="wallpaperSeed"
+								type="text"
+								placeholder="Example: 481739"
+								autocomplete="off"
+							>
+
+							<button
+								class="seed-randomize-button"
+								id="randomizeSeedButton"
+								type="button"
+								title="Generate a random seed"
+							>
+								↻
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<div class="generator-settings-footer">
+					<button
+						class="generator-footer-button"
+						id="cancelGeneratorSettingsButton"
+						type="button"
+					>
+						Cancel
+					</button>
+
+					<button
+						class="generator-footer-button primary"
+						id="saveGeneratorSettingsButton"
+						type="button"
+					>
+						Save settings
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="gallery-viewport" id="galleryViewport">
+			<div class="gallery-world" id="galleryWorld">
+				<div class="gallery-grid" id="galleryGrid"></div>
+			</div>
+
+			<div class="gallery-empty" id="galleryEmpty">
+				<div class="gallery-empty-icon">▦</div>
+				<h2>Your gallery is empty</h2>
+				<p>
+					Choose a folder containing images and videos. They stay on your device
+					and are not uploaded anywhere.
+				</p>
+			</div>
+		</div>
+
+
+		<div class="drop-overlay" id="dropOverlay" aria-hidden="true">
+			<div class="drop-overlay-card">
+				<strong>Drop to load your gallery</strong>
+				<span>Folders, images and videos are supported</span>
+			</div>
+		</div>
+
+		<div class="feature-overlay" id="tagsOverlay" aria-hidden="true">
+			<div class="feature-card tags-card" role="dialog" aria-modal="true">
+				<div class="feature-header">
+					<div>
+						<h2>Tags</h2>
+						<p id="tagsSelectedName">Select a media item first.</p>
+					</div>
+					<button class="feature-close" data-close-overlay="tagsOverlay" type="button">×</button>
+				</div>
+
+				<div class="feature-section">
+					<h3>Selected media</h3>
+					<div class="tag-input-row">
+						<input id="tagInput" type="text" placeholder="Type a tag and press Enter" autocomplete="off">
+						<button id="addTagButton" type="button">Add</button>
+					</div>
+					<div class="tag-list" id="selectedTagList"></div>
+				</div>
+
+				<div class="feature-section">
+					<div class="feature-section-heading">
+						<h3>Filter gallery</h3>
+						<button class="small-feature-button" id="clearTagFilterButton" type="button">Show all</button>
+					</div>
+					<div class="tag-list" id="tagFilterList"></div>
+				</div>
+			</div>
+		</div>
+
+		<div class="feature-overlay" id="statisticsOverlay" aria-hidden="true">
+			<div class="feature-card statistics-card" role="dialog" aria-modal="true">
+				<div class="feature-header">
+					<div>
+						<h2>Gallery statistics</h2>
+						<p>Information calculated from the currently loaded folder.</p>
+					</div>
+					<button class="feature-close" data-close-overlay="statisticsOverlay" type="button">×</button>
+				</div>
+				<div class="statistics-grid" id="statisticsGrid"></div>
+			</div>
+		</div>
+
+		<div class="feature-overlay" id="similarOverlay" aria-hidden="true">
+			<div class="feature-card similar-card" role="dialog" aria-modal="true">
+				<div class="feature-header">
+					<div>
+						<h2>Similar media</h2>
+						<p id="similarDescription">Select an image or video to search.</p>
+					</div>
+					<button class="feature-close" data-close-overlay="similarOverlay" type="button">×</button>
+				</div>
+				<div class="similar-grid" id="similarGrid"></div>
+			</div>
+		</div>
+
+		<div class="gallery-toast" id="galleryToast" role="status" aria-live="polite"></div>
+
+		<div class="wallpaper-preview" id="wallpaperPreview" aria-hidden="true">
+			<div class="wallpaper-preview-card">
+				<img
+					class="wallpaper-preview-image"
+					id="wallpaperPreviewImage"
+					alt="Generated mosaic wallpaper preview"
+				>
+
+				<video
+					class="wallpaper-preview-video"
+					id="wallpaperPreviewVideo"
+					controls
+					loop
+					muted
+					playsinline
+				></video>
+
+				<p class="preview-seed" id="previewSeed"></p>
+
+				<div class="wallpaper-preview-actions">
+					<button
+						class="wallpaper-action primary"
+						id="downloadWallpaperButton"
+						type="button"
+					>
+						Download
+					</button>
+
+					<button
+						class="wallpaper-action"
+						id="previewVideoWallpaperButton"
+						type="button"
+						hidden
+					>
+						Preview Video
+					</button>
+
+					<button
+						class="wallpaper-action"
+						id="exportVideoWallpaperButton"
+						type="button"
+						hidden
+					>
+						Export WebM
+					</button>
+
+					<button
+						class="wallpaper-action"
+						id="remakeWallpaperButton"
+						type="button"
+					>
+						Remake
+					</button>
+
+					<button
+						class="wallpaper-action"
+						id="closeWallpaperPreviewButton"
+						type="button"
+					>
+						Cancel
+					</button>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<p class="gallery-ai-note">
+		This website was made with AI because I was too lazy to code it. The projects shown in my portfolio were not made with AI.
+	</p>
+
+	<script>
+		const galleryPage = document.getElementById("galleryPage");
+// Gallery — justified mosaic layout
+
+		const folderInput = document.getElementById("folderInput");
+		const galleryGrid = document.getElementById("galleryGrid");
+		const galleryEmpty = document.getElementById("galleryEmpty");
+		const galleryViewport = document.getElementById("galleryViewport");
+		const galleryWorld = document.getElementById("galleryWorld");
+		const zoomInButton = document.getElementById("zoomInButton");
+		const zoomOutButton = document.getElementById("zoomOutButton");
+		const resetGalleryButton = document.getElementById("resetGalleryButton");
+		const generateBackgroundButton =
+			document.getElementById("generateBackgroundButton");
+		const galleryToast = document.getElementById("galleryToast");
+		const wallpaperPreview = document.getElementById("wallpaperPreview");
+		const wallpaperPreviewImage =
+			document.getElementById("wallpaperPreviewImage");
+		const wallpaperPreviewVideo =
+			document.getElementById("wallpaperPreviewVideo");
+		const previewVideoWallpaperButton =
+			document.getElementById("previewVideoWallpaperButton");
+		const exportVideoWallpaperButton =
+			document.getElementById("exportVideoWallpaperButton");
+		const downloadWallpaperButton =
+			document.getElementById("downloadWallpaperButton");
+		const remakeWallpaperButton =
+			document.getElementById("remakeWallpaperButton");
+		const closeWallpaperPreviewButton =
+			document.getElementById("closeWallpaperPreviewButton");
+		const randomCountEnabled =
+			document.getElementById("randomCountEnabled");
+		const fixedPhotoCount =
+			document.getElementById("fixedPhotoCount");
+		const minimumPhotoCount =
+			document.getElementById("minimumPhotoCount");
+		const maximumPhotoCount =
+			document.getElementById("maximumPhotoCount");
+		const wallpaperSeed =
+			document.getElementById("wallpaperSeed");
+		const randomizeSeedButton =
+			document.getElementById("randomizeSeedButton");
+		const previewSeed =
+			document.getElementById("previewSeed");
+		const openGeneratorSettingsButton =
+			document.getElementById("openGeneratorSettingsButton");
+		const generatorSettingsOverlay =
+			document.getElementById("generatorSettingsOverlay");
+		const closeGeneratorSettingsButton =
+			document.getElementById("closeGeneratorSettingsButton");
+		const cancelGeneratorSettingsButton =
+			document.getElementById("cancelGeneratorSettingsButton");
+		const saveGeneratorSettingsButton =
+			document.getElementById("saveGeneratorSettingsButton");
+		const randomModeButton =
+			document.getElementById("randomModeButton");
+		const fixedModeButton =
+			document.getElementById("fixedModeButton");
+		const randomCountFields =
+			document.getElementById("randomCountFields");
+		const fixedCountFields =
+			document.getElementById("fixedCountFields");
+		const zoomDisplay = document.getElementById("zoomDisplay");
+
+		let galleryImages = [];
+		let galleryScale = 1;
+		let galleryX = 0;
+		let galleryY = 0;
+		let draggingGallery = false;
+		let previousPointerX = 0;
+		let previousPointerY = 0;
+
+		const FAVORITE_MEDIA_KEY = "trollmineFavoriteMedia";
+		const DISABLED_MEDIA_KEY = "trollmineDisabledMedia";
+
+		function readStoredMediaSet(storageKey) {
+			try {
+				const storedValue = JSON.parse(localStorage.getItem(storageKey) || "[]");
+				return new Set(Array.isArray(storedValue) ? storedValue : []);
+			} catch {
+				return new Set();
+			}
+		}
+
+		const favoriteMediaPaths = readStoredMediaSet(FAVORITE_MEDIA_KEY);
+		const disabledMediaPaths = readStoredMediaSet(DISABLED_MEDIA_KEY);
+
+		function getMediaPath(photo) {
+			return photo.file.webkitRelativePath || photo.file.name;
+		}
+
+		function saveMediaStates() {
+			localStorage.setItem(
+				FAVORITE_MEDIA_KEY,
+				JSON.stringify([...favoriteMediaPaths])
+			);
+
+			localStorage.setItem(
+				DISABLED_MEDIA_KEY,
+				JSON.stringify([...disabledMediaPaths])
+			);
+		}
+
+		function updateMediaStateAppearance(photo) {
+			if (!photo.element) {
+				return;
+			}
+
+			photo.element.classList.toggle("favorite", photo.favorite);
+			photo.element.classList.toggle("disabled", photo.disabled);
+		}
+
+		function toggleFavoriteMedia(photo) {
+			const mediaPath = getMediaPath(photo);
+			photo.favorite = !photo.favorite;
+
+			if (photo.favorite) {
+				photo.disabled = false;
+				favoriteMediaPaths.add(mediaPath);
+				disabledMediaPaths.delete(mediaPath);
+
+				if (typeof preferredPhotos !== "undefined") {
+					preferredPhotos.add(photo);
+					excludedPhotos.delete(photo);
+				}
+
+				showGalleryToast("Media added to favorites.");
+			} else {
+				favoriteMediaPaths.delete(mediaPath);
+
+				if (typeof preferredPhotos !== "undefined") {
+					preferredPhotos.delete(photo);
+				}
+
+				showGalleryToast("Media removed from favorites.");
+			}
+
+			saveMediaStates();
+			updateMediaStateAppearance(photo);
+		}
+
+		function toggleDisabledMedia(photo) {
+			const mediaPath = getMediaPath(photo);
+			photo.disabled = !photo.disabled;
+
+			if (photo.disabled) {
+				photo.favorite = false;
+				disabledMediaPaths.add(mediaPath);
+				favoriteMediaPaths.delete(mediaPath);
+
+				if (typeof excludedPhotos !== "undefined") {
+					excludedPhotos.add(photo);
+					preferredPhotos.delete(photo);
+				}
+
+				showGalleryToast("Media disabled for wallpaper generation.");
+			} else {
+				disabledMediaPaths.delete(mediaPath);
+
+				if (typeof excludedPhotos !== "undefined") {
+					excludedPhotos.delete(photo);
+				}
+
+				showGalleryToast("Media enabled for wallpaper generation.");
+			}
+
+			saveMediaStates();
+			updateMediaStateAppearance(photo);
+		}
+
+		function getEnabledGalleryImages() {
+			return galleryImages.filter(photo => !photo.disabled);
+		}
+
+		const minimumZoom = 0.25;
+		const maximumZoom = 4;
+		const mosaicGap = 7;
+
+		function isImageFile(file) {
+			if (file.type.startsWith("image/")) {
+				return true;
+			}
+
+			const extension = file.name.split(".").pop().toLowerCase();
+
+			return [
+				"jpg", "jpeg", "png", "gif", "webp",
+				"avif", "bmp", "svg"
+			].includes(extension);
+		}
+
+
+		function isVideoFile(file) {
+			if (file.type.startsWith("video/")) {
+				return true;
+			}
+
+			const extension = file.name.split(".").pop().toLowerCase();
+			return ["mp4", "webm", "mov", "m4v", "ogv", "ogg"].includes(extension);
+		}
+
+		function isMediaFile(file) {
+			return isImageFile(file) || isVideoFile(file);
+		}
+
+		function readFileAsDataURL(file) {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+
+				reader.onload = () => resolve(reader.result);
+				reader.onerror = () => reject(reader.error);
+
+				reader.readAsDataURL(file);
+			});
+		}
+
+		function measureImage(dataUrl, file) {
+			return new Promise((resolve, reject) => {
+				const image = new Image();
+
+				image.onload = () => {
+					resolve({
+						file,
+						src: dataUrl,
+						width: image.naturalWidth,
+						height: image.naturalHeight,
+						ratio: image.naturalWidth / image.naturalHeight
+					});
+				};
+
+				image.onerror = () => reject(
+					new Error(`Could not read ${file.name}`)
+				);
+
+				image.src = dataUrl;
+			});
+		}
+
+
+		function measureVideo(source, file) {
+			return new Promise((resolve, reject) => {
+				const video = document.createElement("video");
+				video.preload = "metadata";
+				video.muted = true;
+				video.playsInline = true;
+
+				video.addEventListener("loadedmetadata", () => {
+					if (!video.videoWidth || !video.videoHeight) {
+						reject(new Error(`Could not read ${file.name}`));
+						return;
+					}
+
+					resolve({
+						file,
+						src: source,
+						objectUrl: source,
+						type: "video",
+						width: video.videoWidth,
+						height: video.videoHeight,
+						ratio: video.videoWidth / video.videoHeight,
+						duration: Number.isFinite(video.duration) ? video.duration : 0
+					});
+				}, { once: true });
+
+				video.addEventListener("error", () => {
+					reject(new Error(`The browser could not decode ${file.name}`));
+				}, { once: true });
+
+				video.src = source;
+			});
+		}
+
+		async function loadGalleryImage(file) {
+			if (isVideoFile(file)) {
+				const objectUrl = URL.createObjectURL(file);
+
+				try {
+					return await measureVideo(objectUrl, file);
+				} catch (error) {
+					URL.revokeObjectURL(objectUrl);
+					throw error;
+				}
+			}
+
+			const dataUrl = await readFileAsDataURL(file);
+			const image = await measureImage(dataUrl, file);
+			image.type = "image";
+			return image;
+		}
+
+		function applyGalleryTransform() {
+			galleryWorld.style.transform =
+				`translate(${galleryX}px, ${galleryY}px) scale(${galleryScale})`;
+
+			zoomDisplay.textContent = `${Math.round(galleryScale * 100)}%`;
+		}
+
+		function resetGalleryView() {
+			galleryScale = 1;
+			galleryX = 0;
+			galleryY = 0;
+			applyGalleryTransform();
+		}
+
+		function createGalleryElement(photo) {
+			const item = document.createElement("figure");
+			item.className = "gallery-item";
+
+			const mediaPath = getMediaPath(photo);
+			photo.favorite = favoriteMediaPaths.has(mediaPath);
+			photo.disabled = disabledMediaPaths.has(mediaPath);
+
+			if (photo.favorite && photo.disabled) {
+				photo.disabled = false;
+				disabledMediaPaths.delete(mediaPath);
+				saveMediaStates();
+			}
+
+			let mediaElement;
+
+			if (photo.type === "video") {
+				mediaElement = document.createElement("video");
+				mediaElement.src = photo.src;
+				mediaElement.preload = "metadata";
+				mediaElement.muted = true;
+				mediaElement.loop = true;
+				mediaElement.playsInline = true;
+				mediaElement.draggable = false;
+				mediaElement.title = "Click to play or pause";
+
+				mediaElement.addEventListener("play", () => {
+					item.classList.add("video-playing");
+				});
+
+				mediaElement.addEventListener("pause", () => {
+					item.classList.remove("video-playing");
+				});
+			} else {
+				mediaElement = document.createElement("img");
+				mediaElement.src = photo.src;
+				mediaElement.alt = photo.file.name;
+				mediaElement.draggable = false;
+			}
+
+			const caption = document.createElement("figcaption");
+			caption.className = "gallery-file-name";
+			caption.textContent = mediaPath;
+
+			item.appendChild(mediaElement);
+			item.appendChild(caption);
+
+			item.addEventListener("click", async event => {
+				if (event.shiftKey || event.ctrlKey) {
+					event.preventDefault();
+					event.stopPropagation();
+
+					if (event.ctrlKey) {
+						toggleDisabledMedia(photo);
+					} else {
+						toggleFavoriteMedia(photo);
+					}
+
+					return;
+				}
+
+				if (photo.type !== "video") {
+					return;
+				}
+
+				event.preventDefault();
+				event.stopPropagation();
+
+				if (mediaElement.paused) {
+					for (const video of galleryGrid.querySelectorAll("video")) {
+						if (video !== mediaElement) {
+							video.pause();
+						}
+					}
+
+					await mediaElement.play().catch(() => {
+						showGalleryToast("This video could not be played by the browser.");
+					});
+				} else {
+					mediaElement.pause();
+				}
+			});
+
+			photo.element = item;
+			photo.mediaElement = mediaElement;
+			updateMediaStateAppearance(photo);
+			return item;
+		}
+
+		function layoutMosaic() {
+			if (galleryImages.length === 0) {
+				galleryGrid.style.height = "0px";
+				return;
+			}
+
+			const availableWidth = Math.max(
+				320,
+				galleryWorld.clientWidth - 16
+			);
+
+			/*
+				Larger screens use taller rows. The last row is left at its
+				natural target height instead of being stretched too far.
+			*/
+			const targetRowHeight = Math.max(
+				150,
+				Math.min(290, availableWidth / 5.2)
+			);
+
+			let currentRow = [];
+			let currentRatioTotal = 0;
+			let top = 0;
+
+			function placeRow(row, ratioTotal, isLastRow) {
+				if (row.length === 0) {
+					return;
+				}
+
+				const totalGaps = mosaicGap * (row.length - 1);
+				const usableWidth = availableWidth - totalGaps;
+
+				let rowHeight = usableWidth / ratioTotal;
+
+				if (isLastRow) {
+					rowHeight = Math.min(rowHeight, targetRowHeight);
+				}
+
+				let left = 0;
+
+				for (const photo of row) {
+					const width = rowHeight * photo.ratio;
+
+					photo.element.style.left = `${left}px`;
+					photo.element.style.top = `${top}px`;
+					photo.element.style.width = `${width}px`;
+					photo.element.style.height = `${rowHeight}px`;
+
+					left += width + mosaicGap;
+				}
+
+				top += rowHeight + mosaicGap;
+			}
+
+			for (const photo of galleryImages) {
+				currentRow.push(photo);
+				currentRatioTotal += photo.ratio;
+
+				const estimatedWidth =
+					currentRatioTotal * targetRowHeight +
+					mosaicGap * (currentRow.length - 1);
+
+				if (estimatedWidth >= availableWidth) {
+					placeRow(currentRow, currentRatioTotal, false);
+					currentRow = [];
+					currentRatioTotal = 0;
+				}
+			}
+
+			placeRow(currentRow, currentRatioTotal, true);
+			galleryGrid.style.height = `${Math.max(0, top - mosaicGap)}px`;
+		}
+
+		folderInput.addEventListener("change", async () => {
+			await loadMediaFiles(Array.from(folderInput.files), false);
+			folderInput.value = "";
+		});
+
+		function setGalleryZoom(newScale, originX, originY) {
+			const boundedScale = Math.min(
+				maximumZoom,
+				Math.max(minimumZoom, newScale)
+			);
+
+			if (boundedScale === galleryScale) {
+				return;
+			}
+
+			const viewportBounds = galleryViewport.getBoundingClientRect();
+			const cursorX = originX - viewportBounds.left;
+			const cursorY = originY - viewportBounds.top;
+
+			const worldX = (cursorX - galleryX) / galleryScale;
+			const worldY = (cursorY - galleryY) / galleryScale;
+
+			galleryScale = boundedScale;
+			galleryX = cursorX - worldX * galleryScale;
+			galleryY = cursorY - worldY * galleryScale;
+
+			applyGalleryTransform();
+		}
+
+		galleryViewport.addEventListener(
+			"wheel",
+			event => {
+				event.preventDefault();
+
+				const zoomMultiplier = event.deltaY < 0 ? 1.12 : 0.89;
+
+				setGalleryZoom(
+					galleryScale * zoomMultiplier,
+					event.clientX,
+					event.clientY
+				);
+			},
+			{ passive: false }
+		);
+
+		zoomInButton.addEventListener("click", () => {
+			const bounds = galleryViewport.getBoundingClientRect();
+
+			setGalleryZoom(
+				galleryScale * 1.2,
+				bounds.left + bounds.width / 2,
+				bounds.top + bounds.height / 2
+			);
+		});
+
+		zoomOutButton.addEventListener("click", () => {
+			const bounds = galleryViewport.getBoundingClientRect();
+
+			setGalleryZoom(
+				galleryScale / 1.2,
+				bounds.left + bounds.width / 2,
+				bounds.top + bounds.height / 2
+			);
+		});
+
+		resetGalleryButton.addEventListener("click", resetGalleryView);
+
+		let galleryToastTimer;
+
+		function showGalleryToast(message) {
+			clearTimeout(galleryToastTimer);
+			galleryToast.textContent = message;
+			galleryToast.classList.add("visible");
+
+			galleryToastTimer = setTimeout(() => {
+				galleryToast.classList.remove("visible");
+			}, 2600);
+		}
+
+		function shuffleArray(items) {
+			const shuffled = [...items];
+
+			for (let index = shuffled.length - 1; index > 0; index--) {
+				const randomIndex = Math.floor(Math.random() * (index + 1));
+
+				[shuffled[index], shuffled[randomIndex]] =
+					[shuffled[randomIndex], shuffled[index]];
+			}
+
+			return shuffled;
+		}
+
+		function getRenderableWidth(media) {
+			return media.videoWidth || media.naturalWidth || media.width || 1;
+		}
+
+		function getRenderableHeight(media) {
+			return media.videoHeight || media.naturalHeight || media.height || 1;
+		}
+
+		function drawImageContain(context, image, x, y, width, height) {
+			/*
+				Fit the entire image inside the available rectangle.
+
+				Nothing is cropped or stretched. The original width/height
+				ratio is always preserved, and any unused space stays white.
+			*/
+			const sourceRatio = getRenderableWidth(image) / getRenderableHeight(image);
+			const targetRatio = width / height;
+
+			let drawWidth;
+			let drawHeight;
+
+			if (sourceRatio > targetRatio) {
+				drawWidth = width;
+				drawHeight = width / sourceRatio;
+			} else {
+				drawHeight = height;
+				drawWidth = height * sourceRatio;
+			}
+
+			const drawX = x + (width - drawWidth) / 2;
+			const drawY = y + (height - drawHeight) / 2;
+
+			context.drawImage(
+				image,
+				drawX,
+				drawY,
+				drawWidth,
+				drawHeight
+			);
+		}
+
+		function loadCanvasImage(source) {
+			return new Promise((resolve, reject) => {
+				const image = new Image();
+
+				image.onload = () => resolve(image);
+				image.onerror = reject;
+				image.src = source;
+			});
+		}
+
+		function loadCanvasVideo(source) {
+			return new Promise((resolve, reject) => {
+				const video = document.createElement("video");
+				let settled = false;
+
+				const finish = () => {
+					if (settled || video.readyState < 2) {
+						return;
+					}
+
+					settled = true;
+					resolve(video);
+				};
+
+				video.preload = "auto";
+				video.muted = true;
+				video.defaultMuted = true;
+				video.loop = true;
+				video.playsInline = true;
+
+				video.addEventListener("loadeddata", async () => {
+					try {
+						if (Number.isFinite(video.duration) && video.duration > 0.1) {
+							video.currentTime = Math.min(0.25, video.duration * 0.08);
+
+							await new Promise(done => {
+								const timeout = setTimeout(done, 700);
+								video.addEventListener("seeked", () => {
+									clearTimeout(timeout);
+									done();
+								}, { once: true });
+							});
+						}
+					} finally {
+						finish();
+					}
+				}, { once: true });
+
+				video.addEventListener("canplay", finish, { once: true });
+				video.addEventListener("error", () => {
+					if (!settled) {
+						settled = true;
+						reject(new Error("A selected video could not be decoded."));
+					}
+				}, { once: true });
+
+				video.src = source;
+				video.load();
+			});
+		}
+
+		function loadCanvasMedia(photo) {
+			return photo.type === "video"
+				? loadCanvasVideo(photo.src)
+				: loadCanvasImage(photo.src);
+		}
+
+		let generatedWallpaperBlob = null;
+		let generatedWallpaperUrl = null;
+
+		function hashSeed(seedText) {
+			let hash = 2166136261;
+
+			for (let index = 0; index < seedText.length; index++) {
+				hash ^= seedText.charCodeAt(index);
+				hash = Math.imul(hash, 16777619);
+			}
+
+			return hash >>> 0;
+		}
+
+		function createSeededRandom(seedText) {
+			let state = hashSeed(seedText) || 0x6d2b79f5;
+
+			return function seededRandom() {
+				state += 0x6d2b79f5;
+				let value = state;
+				value = Math.imul(value ^ (value >>> 15), value | 1);
+				value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+				return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+			};
+		}
+
+		function seededShuffle(items, random) {
+			const result = [...items];
+
+			for (let index = result.length - 1; index > 0; index--) {
+				const swapIndex = Math.floor(random() * (index + 1));
+				[result[index], result[swapIndex]] =
+					[result[swapIndex], result[index]];
+			}
+
+			return result;
+		}
+
+		function createRandomSeed() {
+			return String(
+				Math.floor(Math.random() * 900000000) + 100000000
+			);
+		}
+
+		function clampInteger(value, minimum, maximum, fallback) {
+			const parsed = Number.parseInt(value, 10);
+
+			if (!Number.isFinite(parsed)) {
+				return fallback;
+			}
+
+			return Math.min(maximum, Math.max(minimum, parsed));
+		}
+
+		function getGeneratorOptions() {
+			const availableCount = getEnabledGalleryImages().length;
+
+			if (availableCount === 0) {
+				throw new Error("Enable at least one image before generating.");
+			}
+
+			const minimum = Math.min(
+				availableCount,
+				Math.max(1, savedGeneratorSettings.minimumCount)
+			);
+
+			const maximum = Math.min(
+				availableCount,
+				Math.max(minimum, savedGeneratorSettings.maximumCount)
+			);
+
+			const fixed = Math.min(
+				availableCount,
+				Math.max(1, savedGeneratorSettings.fixedCount)
+			);
+
+			let seed = savedGeneratorSettings.seed.trim();
+
+			if (!seed) {
+				seed = createRandomSeed();
+				savedGeneratorSettings.seed = seed;
+			}
+
+			const random = createSeededRandom(seed);
+			const count = savedGeneratorSettings.randomMode
+				? minimum + Math.floor(random() * (maximum - minimum + 1))
+				: fixed;
+
+			return {
+				count,
+				seed,
+				random
+			};
+		}
+
+		function createLeafNode(photo) {
+			return {
+				type: "leaf",
+				photo,
+				ratio: photo.ratio
+			};
+		}
+
+		function combineMosaicNodes(first, second, direction) {
+			if (direction === "vertical") {
+				/*
+					Side-by-side cells share the same height, so their aspect
+					ratios add together.
+				*/
+				return {
+					type: "split",
+					direction,
+					first,
+					second,
+					ratio: first.ratio + second.ratio
+				};
+			}
+
+			/*
+				Stacked cells share the same width. The combined height is the
+				sum of both child heights.
+			*/
+			return {
+				type: "split",
+				direction,
+				first,
+				second,
+				ratio:
+					1 /
+					(
+						1 / first.ratio +
+						1 / second.ratio
+					)
+			};
+		}
+
+		function buildRandomMosaicTree(photos, random) {
+			let nodes = seededShuffle(
+				photos.map(createLeafNode),
+				random
+			);
+
+			while (nodes.length > 1) {
+				const firstIndex = Math.floor(random() * nodes.length);
+				const first = nodes.splice(firstIndex, 1)[0];
+
+				const secondIndex = Math.floor(random() * nodes.length);
+				const second = nodes.splice(secondIndex, 1)[0];
+
+				const verticalRatio =
+					first.ratio + second.ratio;
+
+				const horizontalRatio =
+					1 /
+					(
+						1 / first.ratio +
+						1 / second.ratio
+					);
+
+				/*
+					Prefer the split that does not create an extremely thin
+					combined region, while still allowing seeded variation.
+				*/
+				const verticalShapeScore =
+					Math.abs(Math.log(verticalRatio / (16 / 9)));
+
+				const horizontalShapeScore =
+					Math.abs(Math.log(horizontalRatio / (16 / 9)));
+
+				let direction;
+
+				if (Math.abs(verticalShapeScore - horizontalShapeScore) < 0.2) {
+					direction = random() >= 0.5
+						? "vertical"
+						: "horizontal";
+				} else {
+					direction =
+						verticalShapeScore < horizontalShapeScore
+							? "vertical"
+							: "horizontal";
+				}
+
+				nodes.push(
+					combineMosaicNodes(
+						first,
+						second,
+						direction
+					)
+				);
+			}
+
+			return nodes[0];
+		}
+
+		function scoreMosaicTree(node, targetRatio) {
+			let score = Math.abs(
+				Math.log(node.ratio / targetRatio)
+			) * 100000;
+
+			function inspect(current) {
+				if (current.type === "leaf") {
+					return;
+				}
+
+				const firstRatio = current.first.ratio;
+				const secondRatio = current.second.ratio;
+
+				/*
+					Penalize wildly unbalanced neighboring cells so the final
+					layout stays readable and avoids very thin strips.
+				*/
+				score += Math.abs(
+					Math.log(firstRatio / secondRatio)
+				) * 180;
+
+				inspect(current.first);
+				inspect(current.second);
+			}
+
+			inspect(node);
+			return score;
+		}
+
+		function layoutMosaicTree(node, x, y, width, height, gap, leaves) {
+			if (node.type === "leaf") {
+				leaves.push({
+					photo: node.photo,
+					x,
+					y,
+					width,
+					height
+				});
+				return;
+			}
+
+			if (node.direction === "vertical") {
+				const availableWidth = Math.max(1, width - gap);
+				const firstWidth =
+					availableWidth *
+					(
+						node.first.ratio /
+						(node.first.ratio + node.second.ratio)
+					);
+
+				const secondWidth = availableWidth - firstWidth;
+
+				layoutMosaicTree(
+					node.first,
+					x,
+					y,
+					firstWidth,
+					height,
+					gap,
+					leaves
+				);
+
+				layoutMosaicTree(
+					node.second,
+					x + firstWidth + gap,
+					y,
+					secondWidth,
+					height,
+					gap,
+					leaves
+				);
+
+				return;
+			}
+
+			const firstHeight =
+				width / node.first.ratio;
+
+			const secondHeight =
+				width / node.second.ratio;
+
+			const naturalTotalHeight = firstHeight + secondHeight;
+			const availableHeight = Math.max(1, height - gap);
+			const scale = availableHeight / naturalTotalHeight;
+			const scaledFirstHeight = firstHeight * scale;
+			const scaledSecondHeight = availableHeight - scaledFirstHeight;
+
+			layoutMosaicTree(
+				node.first,
+				x,
+				y,
+				width,
+				scaledFirstHeight,
+				gap,
+				leaves
+			);
+
+			layoutMosaicTree(
+				node.second,
+				x,
+				y + scaledFirstHeight + gap,
+				width,
+				scaledSecondHeight,
+				gap,
+				leaves
+			);
+		}
+
+		function buildRecursiveWallpaperLayout(
+			photos,
+			canvasWidth,
+			canvasHeight,
+			options
+		) {
+			const padding = 8;
+			const gap = 8;
+			const targetWidth = canvasWidth - padding * 2;
+			const targetHeight = canvasHeight - padding * 2;
+			const targetRatio = targetWidth / targetHeight;
+			const favoritePhotos = seededShuffle(
+				photos.filter(photo => photo.favorite),
+				options.random
+			);
+
+			const regularPhotos = seededShuffle(
+				photos.filter(photo => !photo.favorite),
+				options.random
+			);
+
+			const selected = [
+				...favoritePhotos,
+				...regularPhotos
+			].slice(0, options.count);
+
+			let bestTree = null;
+			let bestScore = Number.POSITIVE_INFINITY;
+
+			for (let attempt = 0; attempt < 1000; attempt++) {
+				const tree = buildRandomMosaicTree(
+					selected,
+					options.random
+				);
+
+				const score = scoreMosaicTree(
+					tree,
+					targetRatio
+				);
+
+				if (score < bestScore) {
+					bestScore = score;
+					bestTree = tree;
+				}
+			}
+
+			/*
+				Fit the complete tree inside the wallpaper. All internal cells
+				match their photos exactly, so there are no blank areas between
+				images. Only a small centered outer margin can remain when the
+				tree's final ratio differs from 16:9.
+			*/
+			let layoutWidth;
+			let layoutHeight;
+
+			if (bestTree.ratio > targetRatio) {
+				layoutWidth = targetWidth;
+				layoutHeight = targetWidth / bestTree.ratio;
+			} else {
+				layoutHeight = targetHeight;
+				layoutWidth = targetHeight * bestTree.ratio;
+			}
+
+			const startX =
+				padding + (targetWidth - layoutWidth) / 2;
+
+			const startY =
+				padding + (targetHeight - layoutHeight) / 2;
+
+			const leaves = [];
+
+			layoutMosaicTree(
+				bestTree,
+				startX,
+				startY,
+				layoutWidth,
+				layoutHeight,
+				gap,
+				leaves
+			);
+
+			return {
+				leaves,
+				photoCount: options.count,
+				seed: options.seed
+			};
+		}
+
+		async function renderMosaicWallpaper(options) {
+			const canvas = document.createElement("canvas");
+			canvas.width = 2560;
+			canvas.height = 1440;
+
+			const context = canvas.getContext("2d", {
+				alpha: false
+			});
+
+			context.fillStyle = "#ffffff";
+			context.fillRect(0, 0, canvas.width, canvas.height);
+
+			const layout = buildRecursiveWallpaperLayout(
+				getEnabledGalleryImages(),
+				canvas.width,
+				canvas.height,
+				options
+			);
+
+			const uniquePhotos = [
+				...new Set(
+					layout.leaves.map(leaf => leaf.photo)
+				)
+			];
+
+			const loadedImageMap = new Map();
+
+			await Promise.all(
+				uniquePhotos.map(async photo => {
+					const loadedImage = await loadCanvasMedia(photo);
+					loadedImageMap.set(photo, loadedImage);
+				})
+			);
+
+			for (const leaf of layout.leaves) {
+				const image = loadedImageMap.get(leaf.photo);
+
+				context.drawImage(
+					image,
+					leaf.x,
+					leaf.y,
+					leaf.width,
+					leaf.height
+				);
+			}
+
+			return new Promise((resolve, reject) => {
+				canvas.toBlob(
+					blob => {
+						if (blob) {
+							resolve(blob);
+						} else {
+							reject(new Error("Could not create the wallpaper."));
+						}
+					},
+					"image/png"
+				);
+			});
+		}
+
+		function closeWallpaperPreview() {
+			if (typeof stopAnimatedWallpaperPreview === "function") {
+				stopAnimatedWallpaperPreview();
+			}
+
+			wallpaperPreview.classList.remove("visible");
+			wallpaperPreview.setAttribute("aria-hidden", "true");
+		}
+
+		function showWallpaperPreview(blob) {
+			if (generatedWallpaperUrl) {
+				URL.revokeObjectURL(generatedWallpaperUrl);
+			}
+
+			generatedWallpaperBlob = blob;
+			generatedWallpaperUrl = URL.createObjectURL(blob);
+
+			wallpaperPreviewImage.src = generatedWallpaperUrl;
+			wallpaperPreview.classList.add("visible");
+			wallpaperPreview.setAttribute("aria-hidden", "false");
+		}
+
+		async function generateMosaicBackground() {
+			if (galleryImages.length === 0) {
+				showGalleryToast("Choose a folder with images first.");
+				return;
+			}
+
+			if (getEnabledGalleryImages().length === 0) {
+				showGalleryToast("Enable at least one image before generating.");
+				return;
+			}
+
+			generateBackgroundButton.disabled = true;
+			remakeWallpaperButton.disabled = true;
+			generateBackgroundButton.textContent = "Generating…";
+			remakeWallpaperButton.textContent = "Generating…";
+
+			try {
+				const options = getGeneratorOptions();
+				const blob = await renderMosaicWallpaper(options);
+				previewSeed.textContent =
+					`Seed: ${options.seed} • ${options.count} media`;
+				showWallpaperPreview(blob);
+			} catch (error) {
+				console.error(error);
+				showGalleryToast(
+					error && error.message
+						? `Could not generate: ${error.message}`
+						: "The mosaic could not be generated."
+				);
+			} finally {
+				generateBackgroundButton.disabled = false;
+				remakeWallpaperButton.disabled = false;
+				generateBackgroundButton.textContent = "Generate Background";
+				remakeWallpaperButton.textContent = "Remake";
+			}
+		}
+
+		function downloadGeneratedWallpaper() {
+			if (!generatedWallpaperBlob || !generatedWallpaperUrl) {
+				return;
+			}
+
+			const link = document.createElement("a");
+			link.href = generatedWallpaperUrl;
+			link.download = `trollmine-mosaic-${Date.now()}.png`;
+
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+
+			showGalleryToast("2560 × 1440 mosaic downloaded.");
+		}
+
+		downloadWallpaperButton.addEventListener(
+			"click",
+			downloadGeneratedWallpaper
+		);
+
+		remakeWallpaperButton.addEventListener(
+			"click",
+			() => {
+				savedGeneratorSettings.seed = createRandomSeed();
+				wallpaperSeed.value = savedGeneratorSettings.seed;
+				generateMosaicBackground();
+			}
+		);
+
+		closeWallpaperPreviewButton.addEventListener(
+			"click",
+			closeWallpaperPreview
+		);
+
+		wallpaperPreview.addEventListener("click", event => {
+			if (event.target === wallpaperPreview) {
+				closeWallpaperPreview();
+			}
+		});
+
+		document.addEventListener("keydown", event => {
+			if (event.key !== "Escape") {
+				return;
+			}
+
+			if (generatorSettingsOverlay.classList.contains("visible")) {
+				closeGeneratorSettings();
+				return;
+			}
+
+			if (wallpaperPreview.classList.contains("visible")) {
+				closeWallpaperPreview();
+			}
+		});
+
+
+		let savedGeneratorSettings = {
+			randomMode: true,
+			fixedCount: 18,
+			minimumCount: 15,
+			maximumCount: 20,
+			seed: ""
+		};
+
+		function setCountMode(randomMode) {
+			randomCountEnabled.checked = randomMode;
+			randomModeButton.classList.toggle("active", randomMode);
+			fixedModeButton.classList.toggle("active", !randomMode);
+			randomCountFields.classList.toggle("hidden", !randomMode);
+			fixedCountFields.classList.toggle("hidden", randomMode);
+		}
+
+		function openGeneratorSettings() {
+			fixedPhotoCount.value = savedGeneratorSettings.fixedCount;
+			minimumPhotoCount.value = savedGeneratorSettings.minimumCount;
+			maximumPhotoCount.value = savedGeneratorSettings.maximumCount;
+			wallpaperSeed.value = savedGeneratorSettings.seed;
+			setCountMode(savedGeneratorSettings.randomMode);
+
+			generatorSettingsOverlay.classList.add("visible");
+			generatorSettingsOverlay.setAttribute("aria-hidden", "false");
+		}
+
+		function closeGeneratorSettings() {
+			generatorSettingsOverlay.classList.remove("visible");
+			generatorSettingsOverlay.setAttribute("aria-hidden", "true");
+		}
+
+		function saveGeneratorSettings() {
+			let minimum = Math.max(
+				1,
+				Number.parseInt(minimumPhotoCount.value, 10) || 1
+			);
+
+			let maximum = Math.max(
+				1,
+				Number.parseInt(maximumPhotoCount.value, 10) || minimum
+			);
+
+			if (minimum > maximum) {
+				[minimum, maximum] = [maximum, minimum];
+			}
+
+			savedGeneratorSettings = {
+				randomMode: randomCountEnabled.checked,
+				fixedCount: Math.max(
+					1,
+					Number.parseInt(fixedPhotoCount.value, 10) || 1
+				),
+				minimumCount: minimum,
+				maximumCount: maximum,
+				seed: wallpaperSeed.value.trim()
+			};
+
+			closeGeneratorSettings();
+			showGalleryToast("Generator settings saved.");
+		}
+
+		openGeneratorSettingsButton.addEventListener(
+			"click",
+			openGeneratorSettings
+		);
+
+		closeGeneratorSettingsButton.addEventListener(
+			"click",
+			closeGeneratorSettings
+		);
+
+		cancelGeneratorSettingsButton.addEventListener(
+			"click",
+			closeGeneratorSettings
+		);
+
+		saveGeneratorSettingsButton.addEventListener(
+			"click",
+			saveGeneratorSettings
+		);
+
+		randomModeButton.addEventListener("click", () => {
+			setCountMode(true);
+		});
+
+		fixedModeButton.addEventListener("click", () => {
+			setCountMode(false);
+		});
+
+		randomizeSeedButton.addEventListener("click", () => {
+			wallpaperSeed.value = createRandomSeed();
+		});
+
+		generatorSettingsOverlay.addEventListener("click", event => {
+			if (event.target === generatorSettingsOverlay) {
+				closeGeneratorSettings();
+			}
+		});
+
+
+		generateBackgroundButton.addEventListener(
+			"click",
+			generateMosaicBackground
+		);
+
+		galleryViewport.addEventListener("pointerdown", event => {
+			if (event.button !== 0 || event.shiftKey || event.ctrlKey) {
+				return;
+			}
+
+			const clickedMedia = event.target.closest(".gallery-item");
+
+			if (clickedMedia && !spacePanHeld) {
+				return;
+			}
+
+			draggingGallery = true;
+			previousPointerX = event.clientX;
+			previousPointerY = event.clientY;
+
+			galleryViewport.classList.add("dragging");
+			galleryViewport.setPointerCapture(event.pointerId);
+		});
+
+		galleryViewport.addEventListener("pointermove", event => {
+			if (!draggingGallery) {
+				return;
+			}
+
+			galleryX += event.clientX - previousPointerX;
+			galleryY += event.clientY - previousPointerY;
+
+			previousPointerX = event.clientX;
+			previousPointerY = event.clientY;
+
+			applyGalleryTransform();
+		});
+
+		function stopGalleryDragging(event) {
+			draggingGallery = false;
+			galleryViewport.classList.remove("dragging");
+
+			if (
+				event.pointerId !== undefined &&
+				galleryViewport.hasPointerCapture(event.pointerId)
+			) {
+				galleryViewport.releasePointerCapture(event.pointerId);
+			}
+		}
+
+		galleryViewport.addEventListener("pointerup", stopGalleryDragging);
+		galleryViewport.addEventListener("pointercancel", stopGalleryDragging);
+
+		document.addEventListener("keydown", event => {
+			if (!galleryPage.classList.contains("active")) {
+				return;
+			}
+
+			const bounds = galleryViewport.getBoundingClientRect();
+			const centerX = bounds.left + bounds.width / 2;
+			const centerY = bounds.top + bounds.height / 2;
+
+			if (event.key === "+" || event.key === "=") {
+				setGalleryZoom(galleryScale * 1.2, centerX, centerY);
+			}
+
+			if (event.key === "-") {
+				setGalleryZoom(galleryScale / 1.2, centerX, centerY);
+			}
+
+			if (event.key === "0") {
+				resetGalleryView();
+			}
+		});
+
+		window.addEventListener("resize", () => {
+			if (galleryImages.length > 0) {
+				layoutMosaic();
+			}
+		});
+
+		window.addEventListener("beforeunload", () => {
+			if (generatedWallpaperUrl) {
+				URL.revokeObjectURL(generatedWallpaperUrl);
+			}
+
+			for (const media of galleryImages) {
+				if (media.objectUrl) {
+					URL.revokeObjectURL(media.objectUrl);
+				}
+			}
+
+			for (const choice of generatedChoices || []) {
+				if (choice.animatedUrl) {
+					URL.revokeObjectURL(choice.animatedUrl);
+				}
+			}
+		});
+
+
+		
+	</script>
+
+
+	<style>
+		.advanced-toggle-row,
+		.advanced-option-row {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 14px;
+		}
+
+		.advanced-toggle-row label,
+		.advanced-option-row label {
+			font-size: 0.82rem;
+			font-weight: 800;
+			color: #333333;
+		}
+
+		.advanced-toggle-row input[type="checkbox"],
+		.advanced-option-row input[type="checkbox"] {
+			width: 19px;
+			height: 19px;
+			accent-color: #765fe7;
+		}
+
+		.advanced-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 11px;
+			margin-top: 13px;
+		}
+
+		.advanced-grid .generator-field select,
+		.advanced-grid .generator-field input[type="color"] {
+			width: 100%;
+			height: 43px;
+			padding: 0 10px;
+			border: 1px solid rgba(0, 0, 0, 0.16);
+			border-radius: 10px;
+			background: #ffffff;
+			color: #111111;
+			font: inherit;
+			font-weight: 750;
+		}
+
+		.advanced-grid .generator-field input[type="color"] {
+			padding: 4px;
+		}
+
+		.advanced-disabled {
+			opacity: 0.45;
+			pointer-events: none;
+		}
+
+		.wallpaper-choice-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 10px;
+		}
+
+		.wallpaper-choice {
+			position: relative;
+			overflow: hidden;
+			border: 3px solid transparent;
+			border-radius: 11px;
+			background: #eeeeee;
+			cursor: pointer;
+		}
+
+		.wallpaper-choice.selected {
+			border-color: #765fe7;
+			box-shadow: 0 0 0 3px rgba(118, 95, 231, 0.18);
+		}
+
+		.wallpaper-choice img {
+			display: block;
+			width: 100%;
+			aspect-ratio: 16 / 9;
+			object-fit: contain;
+			background: #eeeeee;
+		}
+
+		.wallpaper-choice-number {
+			position: absolute;
+			top: 7px;
+			left: 7px;
+			padding: 5px 8px;
+			border-radius: 8px;
+			background: rgba(0, 0, 0, 0.72);
+			color: #ffffff;
+			font-size: 0.72rem;
+			font-weight: 850;
+		}
+
+		.wallpaper-stats {
+			margin-top: 8px;
+			padding: 9px 12px;
+			border-radius: 10px;
+			background: #f3f3f3;
+			color: #555555;
+			text-align: center;
+			font-size: 0.76rem;
+			font-weight: 750;
+		}
+
+		.wallpaper-extra-actions {
+			display: flex;
+			justify-content: center;
+			gap: 8px;
+			margin-top: 8px;
+		}
+
+		.gallery-item.preferred-photo {
+			outline: 4px solid #7b63ef;
+			outline-offset: -4px;
+		}
+
+		.gallery-item.excluded-photo {
+			opacity: 0.24;
+			filter: grayscale(1);
+		}
+
+		.gallery-item::after {
+			position: absolute;
+			top: 7px;
+			right: 7px;
+			padding: 4px 7px;
+			border-radius: 7px;
+			background: rgba(0, 0, 0, 0.7);
+			color: #ffffff;
+			font-size: 0.66rem;
+			font-weight: 850;
+		}
+
+		.gallery-item.preferred-photo::after {
+			content: "Preferred";
+		}
+
+		.gallery-item.excluded-photo::after {
+			content: "Excluded";
+		}
+
+		@media (max-width: 620px) {
+			.advanced-grid,
+			.wallpaper-choice-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+	</style>
+
+	<script>
+		// Optional advanced wallpaper features
+
+		const advancedSettingsMarkup = `
+			<div class="generator-section">
+				<div class="advanced-toggle-row">
+					<div>
+						<p class="generator-section-title" style="margin-bottom:4px;">Advanced features</p>
+						<p class="generator-settings-description">Everything below is optional and can be disabled.</p>
+					</div>
+					<input id="advancedFeaturesEnabled" type="checkbox">
+				</div>
+
+				<div id="advancedSettingsBody" class="advanced-disabled">
+					<div class="advanced-grid">
+						<div class="generator-field">
+							<label for="resolutionPreset">Resolution</label>
+							<select id="resolutionPreset">
+								<option value="2560x1440">2560 × 1440</option>
+								<option value="1920x1080">1920 × 1080</option>
+								<option value="3840x2160">3840 × 2160</option>
+								<option value="3440x1440">3440 × 1440 Ultrawide</option>
+								<option value="2560x1080">2560 × 1080 Ultrawide</option>
+								<option value="1080x1920">1080 × 1920 Phone</option>
+								<option value="custom">Custom</option>
+							</select>
+						</div>
+
+						<div class="generator-field">
+							<label for="layoutPreset">Layout style</label>
+							<select id="layoutPreset">
+								<option value="balanced">Balanced mosaic</option>
+								<option value="chaotic">Chaotic mosaic</option>
+								<option value="hero">Hero image</option>
+								<option value="grid">Clean grid</option>
+							</select>
+						</div>
+
+						<div class="generator-field">
+							<label for="customWallpaperWidth">Custom width</label>
+							<input id="customWallpaperWidth" type="number" min="320" max="7680" value="2560">
+						</div>
+
+						<div class="generator-field">
+							<label for="customWallpaperHeight">Custom height</label>
+							<input id="customWallpaperHeight" type="number" min="320" max="7680" value="1440">
+						</div>
+
+						<div class="generator-field">
+							<label for="backgroundStyle">Background</label>
+							<select id="backgroundStyle">
+								<option value="white">White</option>
+								<option value="black">Black</option>
+								<option value="custom">Custom color</option>
+								<option value="gradient">Gradient</option>
+								<option value="dominant">Photo-based color</option>
+								<option value="blurred">Blurred used photos</option>
+								<option value="transparent">No background (transparent)</option>
+							</select>
+						</div>
+
+						<div class="generator-field">
+							<label for="backgroundColorOne">Primary color</label>
+							<input id="backgroundColorOne" type="color" value="#ffffff">
+						</div>
+
+						<div class="generator-field">
+							<label for="backgroundColorTwo">Secondary color</label>
+							<input id="backgroundColorTwo" type="color" value="#836fff">
+						</div>
+
+						<div class="generator-field">
+							<label for="imageGapSetting">Image gap</label>
+							<input id="imageGapSetting" type="number" min="0" max="80" value="8">
+						</div>
+
+						<div class="generator-field">
+							<label for="cornerRadiusSetting">Rounded corners</label>
+							<input id="cornerRadiusSetting" type="number" min="0" max="100" value="0">
+						</div>
+
+						<div class="generator-field">
+							<label for="borderStyleSetting">Border style</label>
+							<select id="borderStyleSetting">
+								<option value="none">None</option>
+								<option value="white">White</option>
+								<option value="black">Black</option>
+								<option value="polaroid">Polaroid</option>
+							</select>
+						</div>
+
+						<div class="generator-field">
+							<label for="generationAttemptsSetting">Layout attempts</label>
+							<input id="generationAttemptsSetting" type="number" min="20" max="3000" value="1000">
+						</div>
+
+						<div class="generator-field">
+							<label for="bestOfSetting">Results generated</label>
+							<select id="bestOfSetting">
+								<option value="1">One wallpaper</option>
+								<option value="4">Best of four</option>
+							</select>
+						</div>
+					</div>
+
+					<div class="generator-section" style="margin-top:12px;">
+						<div class="advanced-option-row">
+							<label for="shadowEnabledSetting">Image shadows</label>
+							<input id="shadowEnabledSetting" type="checkbox">
+						</div>
+						<div class="advanced-option-row" style="margin-top:11px;">
+							<label for="smartSelectionSetting">Smart photo selection</label>
+							<input id="smartSelectionSetting" type="checkbox">
+						</div>
+						<div class="advanced-option-row" style="margin-top:11px;">
+							<label for="preferUnusedSetting">Prefer recently unused photos</label>
+							<input id="preferUnusedSetting" type="checkbox">
+						</div>
+						<div class="advanced-option-row" style="margin-top:11px;">
+							<label for="avoidSimilarSetting">Avoid similar aspect ratios</label>
+							<input id="avoidSimilarSetting" type="checkbox">
+						</div>
+						<div class="advanced-option-row" style="margin-top:11px;">
+							<label for="statisticsEnabledSetting">Show generation statistics</label>
+							<input id="statisticsEnabledSetting" type="checkbox">
+						</div>
+						<div class="advanced-option-row" style="margin-top:11px;">
+							<label for="historyEnabledSetting">Remember session history</label>
+							<input id="historyEnabledSetting" type="checkbox">
+						</div>
+						<div class="advanced-option-row" style="margin-top:11px;">
+							<label for="favoritesEnabledSetting">Enable favorites</label>
+							<input id="favoritesEnabledSetting" type="checkbox">
+						</div>
+					</div>
+				</div>
+			</div>
+		`;
+
+		const settingsFooter = document.querySelector(".generator-settings-footer");
+		settingsFooter.insertAdjacentHTML("beforebegin", advancedSettingsMarkup);
+
+		const advancedElements = {
+			enabled: document.getElementById("advancedFeaturesEnabled"),
+			body: document.getElementById("advancedSettingsBody"),
+			resolution: document.getElementById("resolutionPreset"),
+			customWidth: document.getElementById("customWallpaperWidth"),
+			customHeight: document.getElementById("customWallpaperHeight"),
+			layout: document.getElementById("layoutPreset"),
+			background: document.getElementById("backgroundStyle"),
+			colorOne: document.getElementById("backgroundColorOne"),
+			colorTwo: document.getElementById("backgroundColorTwo"),
+			gap: document.getElementById("imageGapSetting"),
+			radius: document.getElementById("cornerRadiusSetting"),
+			border: document.getElementById("borderStyleSetting"),
+			attempts: document.getElementById("generationAttemptsSetting"),
+			bestOf: document.getElementById("bestOfSetting"),
+			shadow: document.getElementById("shadowEnabledSetting"),
+			smartSelection: document.getElementById("smartSelectionSetting"),
+			preferUnused: document.getElementById("preferUnusedSetting"),
+			avoidSimilar: document.getElementById("avoidSimilarSetting"),
+			statistics: document.getElementById("statisticsEnabledSetting"),
+			history: document.getElementById("historyEnabledSetting"),
+			favorites: document.getElementById("favoritesEnabledSetting")
+		};
+
+		const advancedDefaults = {
+			advancedEnabled: false,
+			resolution: "2560x1440",
+			customWidth: 2560,
+			customHeight: 1440,
+			layout: "balanced",
+			background: "white",
+			colorOne: "#ffffff",
+			colorTwo: "#836fff",
+			gap: 8,
+			radius: 0,
+			border: "none",
+			attempts: 1000,
+			bestOf: 1,
+			shadow: false,
+			smartSelection: false,
+			preferUnused: false,
+			avoidSimilar: false,
+			statistics: false,
+			history: false,
+			favorites: false
+		};
+
+		const SETTINGS_STORAGE_KEY = "trollmineWallpaperGeneratorSettingsV2";
+
+		function loadPersistedGeneratorSettings() {
+			try {
+				const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
+				return stored ? JSON.parse(stored) : {};
+			} catch (error) {
+				console.warn("Could not load saved generator settings.", error);
+				return {};
+			}
+		}
+
+		function persistGeneratorSettings() {
+			try {
+				localStorage.setItem(
+					SETTINGS_STORAGE_KEY,
+					JSON.stringify(savedGeneratorSettings)
+				);
+			} catch (error) {
+				console.warn("Could not save generator settings.", error);
+			}
+		}
+
+		Object.assign(
+			savedGeneratorSettings,
+			advancedDefaults,
+			loadPersistedGeneratorSettings()
+		);
+
+		let generatedChoices = [];
+		let selectedChoiceIndex = 0;
+		let sessionGenerationHistory = [];
+		let sessionFavorites = [];
+		const recentlyUsedPhotos = new Set();
+		const preferredPhotos = new Set(
+			galleryImages.filter(photo => photo.favorite)
+		);
+		const excludedPhotos = new Set(
+			galleryImages.filter(photo => photo.disabled)
+		);
+
+		function updateAdvancedSettingsState() {
+			advancedElements.body.classList.toggle(
+				"advanced-disabled",
+				!advancedElements.enabled.checked
+			);
+		}
+
+		advancedElements.enabled.addEventListener(
+			"change",
+			updateAdvancedSettingsState
+		);
+
+		const originalOpenGeneratorSettings = openGeneratorSettings;
+		openGeneratorSettings = function openGeneratorSettingsWithAdvanced() {
+			originalOpenGeneratorSettings();
+
+			advancedElements.enabled.checked = savedGeneratorSettings.advancedEnabled;
+			advancedElements.resolution.value = savedGeneratorSettings.resolution;
+			advancedElements.customWidth.value = savedGeneratorSettings.customWidth;
+			advancedElements.customHeight.value = savedGeneratorSettings.customHeight;
+			advancedElements.layout.value = savedGeneratorSettings.layout;
+			advancedElements.background.value = savedGeneratorSettings.background;
+			advancedElements.colorOne.value = savedGeneratorSettings.colorOne;
+			advancedElements.colorTwo.value = savedGeneratorSettings.colorTwo;
+			advancedElements.gap.value = savedGeneratorSettings.gap;
+			advancedElements.radius.value = savedGeneratorSettings.radius;
+			advancedElements.border.value = savedGeneratorSettings.border;
+			advancedElements.attempts.value = savedGeneratorSettings.attempts;
+			advancedElements.bestOf.value = String(savedGeneratorSettings.bestOf);
+			advancedElements.shadow.checked = savedGeneratorSettings.shadow;
+			advancedElements.smartSelection.checked = savedGeneratorSettings.smartSelection;
+			advancedElements.preferUnused.checked = savedGeneratorSettings.preferUnused;
+			advancedElements.avoidSimilar.checked = savedGeneratorSettings.avoidSimilar;
+			advancedElements.statistics.checked = savedGeneratorSettings.statistics;
+			advancedElements.history.checked = savedGeneratorSettings.history;
+			advancedElements.favorites.checked = savedGeneratorSettings.favorites;
+			updateAdvancedSettingsState();
+		};
+
+		const originalSaveGeneratorSettings = saveGeneratorSettings;
+		saveGeneratorSettings = function saveGeneratorSettingsWithAdvanced() {
+			const advancedValues = {
+				advancedEnabled: advancedElements.enabled.checked,
+				resolution: advancedElements.resolution.value,
+				customWidth: clampInteger(advancedElements.customWidth.value, 320, 7680, 2560),
+				customHeight: clampInteger(advancedElements.customHeight.value, 320, 7680, 1440),
+				layout: advancedElements.layout.value,
+				background: advancedElements.background.value,
+				colorOne: advancedElements.colorOne.value,
+				colorTwo: advancedElements.colorTwo.value,
+				gap: clampInteger(advancedElements.gap.value, 0, 80, 8),
+				radius: clampInteger(advancedElements.radius.value, 0, 100, 0),
+				border: advancedElements.border.value,
+				attempts: clampInteger(advancedElements.attempts.value, 20, 3000, 1000),
+				bestOf: Number.parseInt(advancedElements.bestOf.value, 10) || 1,
+				shadow: advancedElements.shadow.checked,
+				smartSelection: advancedElements.smartSelection.checked,
+				preferUnused: advancedElements.preferUnused.checked,
+				avoidSimilar: advancedElements.avoidSimilar.checked,
+				statistics: advancedElements.statistics.checked,
+				history: advancedElements.history.checked,
+				favorites: advancedElements.favorites.checked
+			};
+
+			originalSaveGeneratorSettings();
+			Object.assign(savedGeneratorSettings, advancedValues);
+			persistGeneratorSettings();
+		};
+
+		// Replace old settings listeners so the overridden functions are used.
+		openGeneratorSettingsButton.replaceWith(openGeneratorSettingsButton.cloneNode(true));
+		saveGeneratorSettingsButton.replaceWith(saveGeneratorSettingsButton.cloneNode(true));
+
+		const newOpenSettingsButton = document.getElementById("openGeneratorSettingsButton");
+		const newSaveSettingsButton = document.getElementById("saveGeneratorSettingsButton");
+
+		newOpenSettingsButton.addEventListener("click", () => openGeneratorSettings());
+		newSaveSettingsButton.addEventListener("click", () => saveGeneratorSettings());
+
+		function getAdvancedResolution() {
+			if (!savedGeneratorSettings.advancedEnabled) {
+				return { width: 2560, height: 1440 };
+			}
+
+			if (savedGeneratorSettings.resolution === "custom") {
+				return {
+					width: savedGeneratorSettings.customWidth,
+					height: savedGeneratorSettings.customHeight
+				};
+			}
+
+			const [width, height] = savedGeneratorSettings.resolution
+				.split("x")
+				.map(value => Number.parseInt(value, 10));
+
+			return { width, height };
+		}
+
+		function selectPhotosForAdvancedGeneration(options) {
+			const allowedPhotos = galleryImages.filter(
+				photo => !excludedPhotos.has(photo)
+			);
+
+			if (allowedPhotos.length === 0) {
+				throw new Error("Every photo is excluded.");
+			}
+
+			let pool = [...allowedPhotos];
+			const preferred = pool.filter(photo => preferredPhotos.has(photo));
+			const normal = pool.filter(photo => !preferredPhotos.has(photo));
+
+			if (savedGeneratorSettings.advancedEnabled && savedGeneratorSettings.preferUnused) {
+				normal.sort((first, second) => {
+					const firstUsed = recentlyUsedPhotos.has(first) ? 1 : 0;
+					const secondUsed = recentlyUsedPhotos.has(second) ? 1 : 0;
+					return firstUsed - secondUsed;
+				});
+			}
+
+			if (savedGeneratorSettings.advancedEnabled && savedGeneratorSettings.smartSelection) {
+				const portrait = normal.filter(photo => photo.ratio < 0.85);
+				const square = normal.filter(photo => photo.ratio >= 0.85 && photo.ratio <= 1.25);
+				const landscape = normal.filter(photo => photo.ratio > 1.25);
+				const buckets = [
+					seededShuffle(portrait, options.random),
+					seededShuffle(square, options.random),
+					seededShuffle(landscape, options.random)
+				];
+
+				const smart = [];
+				let bucketIndex = 0;
+
+				while (buckets.some(bucket => bucket.length > 0)) {
+					const bucket = buckets[bucketIndex % buckets.length];
+
+					if (bucket.length > 0) {
+						smart.push(bucket.shift());
+					}
+
+					bucketIndex++;
+				}
+
+				normal.splice(0, normal.length, ...smart);
+			} else {
+				normal.splice(0, normal.length, ...seededShuffle(normal, options.random));
+			}
+
+			if (savedGeneratorSettings.advancedEnabled && savedGeneratorSettings.avoidSimilar) {
+				const shuffledNormal = seededShuffle(normal, options.random);
+				const diverse = [];
+				let previousRatio = null;
+
+				while (shuffledNormal.length > 0) {
+					let bestIndex = 0;
+
+					if (previousRatio !== null) {
+						let bestDistance = -1;
+
+						for (let index = 0; index < shuffledNormal.length; index++) {
+							const distance = Math.abs(
+								shuffledNormal[index].ratio - previousRatio
+							);
+
+							const randomizedDistance =
+								distance * (0.8 + options.random() * 0.4);
+
+							if (randomizedDistance > bestDistance) {
+								bestDistance = randomizedDistance;
+								bestIndex = index;
+							}
+						}
+					} else {
+						bestIndex = Math.floor(
+							options.random() * shuffledNormal.length
+						);
+					}
+
+					const [nextPhoto] = shuffledNormal.splice(bestIndex, 1);
+					diverse.push(nextPhoto);
+					previousRatio = nextPhoto.ratio;
+				}
+
+				normal.splice(0, normal.length, ...diverse);
+			}
+
+			pool = [...seededShuffle(preferred, options.random), ...normal];
+
+			if (pool.length < options.count) {
+				options.count = pool.length;
+			}
+
+			return pool.slice(0, options.count);
+		}
+
+		function roundedRectanglePath(context, x, y, width, height, radius) {
+			const safeRadius = Math.max(
+				0,
+				Math.min(radius, width / 2, height / 2)
+			);
+
+			context.beginPath();
+			context.moveTo(x + safeRadius, y);
+			context.lineTo(x + width - safeRadius, y);
+			context.quadraticCurveTo(x + width, y, x + width, y + safeRadius);
+			context.lineTo(x + width, y + height - safeRadius);
+			context.quadraticCurveTo(x + width, y + height, x + width - safeRadius, y + height);
+			context.lineTo(x + safeRadius, y + height);
+			context.quadraticCurveTo(x, y + height, x, y + height - safeRadius);
+			context.lineTo(x, y + safeRadius);
+			context.quadraticCurveTo(x, y, x + safeRadius, y);
+			context.closePath();
+		}
+
+		function drawAdvancedBackground(context, canvas, loadedImages) {
+			const style = savedGeneratorSettings.advancedEnabled
+				? savedGeneratorSettings.background
+				: "white";
+
+			context.save();
+			context.clearRect(0, 0, canvas.width, canvas.height);
+
+			if (style === "transparent") {
+				context.restore();
+				return;
+			}
+
+			if (style === "blurred" && loadedImages.length > 0) {
+				const columns = Math.max(
+					1,
+					Math.ceil(Math.sqrt(loadedImages.length * canvas.width / canvas.height))
+				);
+
+				const rows = Math.max(
+					1,
+					Math.ceil(loadedImages.length / columns)
+				);
+
+				const cellWidth = canvas.width / columns;
+				const cellHeight = canvas.height / rows;
+
+				context.filter = `blur(${Math.max(28, Math.round(Math.min(canvas.width, canvas.height) * 0.035))}px)`;
+				context.globalAlpha = 0.9;
+
+				for (let index = 0; index < loadedImages.length; index++) {
+					const image = loadedImages[index];
+					const column = index % columns;
+					const row = Math.floor(index / columns);
+					const x = column * cellWidth;
+					const y = row * cellHeight;
+					const scale = Math.max(
+						cellWidth / getRenderableWidth(image),
+						cellHeight / getRenderableHeight(image)
+					);
+
+					const drawWidth = getRenderableWidth(image) * scale;
+					const drawHeight = getRenderableHeight(image) * scale;
+
+					context.drawImage(
+						image,
+						x + (cellWidth - drawWidth) / 2,
+						y + (cellHeight - drawHeight) / 2,
+						drawWidth,
+						drawHeight
+					);
+				}
+
+				context.filter = "none";
+				context.globalAlpha = 0.2;
+				context.fillStyle = "#000000";
+				context.fillRect(0, 0, canvas.width, canvas.height);
+				context.restore();
+				return;
+			}
+
+			if (style === "black") {
+				context.fillStyle = "#000000";
+			} else if (style === "custom") {
+				context.fillStyle = savedGeneratorSettings.colorOne;
+			} else if (style === "gradient") {
+				const gradient = context.createLinearGradient(
+					0,
+					0,
+					canvas.width,
+					canvas.height
+				);
+
+				gradient.addColorStop(0, savedGeneratorSettings.colorOne);
+				gradient.addColorStop(1, savedGeneratorSettings.colorTwo);
+				context.fillStyle = gradient;
+			} else if (style === "dominant" && loadedImages.length > 0) {
+				const sampleCanvas = document.createElement("canvas");
+				sampleCanvas.width = 1;
+				sampleCanvas.height = 1;
+				const sampleContext = sampleCanvas.getContext("2d");
+				sampleContext.drawImage(loadedImages[0], 0, 0, 1, 1);
+				const pixel = sampleContext.getImageData(0, 0, 1, 1).data;
+				context.fillStyle = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
+			} else {
+				context.fillStyle = "#ffffff";
+			}
+
+			context.fillRect(0, 0, canvas.width, canvas.height);
+			context.restore();
+		}
+
+		function buildGridLayout(photos, width, height, gap) {
+			const columns = Math.ceil(Math.sqrt(photos.length * (width / height)));
+			const rows = Math.ceil(photos.length / columns);
+			const cellWidth = (width - gap * (columns - 1)) / columns;
+			const cellHeight = (height - gap * (rows - 1)) / rows;
+
+			return photos.map((photo, index) => ({
+				photo,
+				x: (index % columns) * (cellWidth + gap),
+				y: Math.floor(index / columns) * (cellHeight + gap),
+				width: cellWidth,
+				height: cellHeight,
+				contain: true
+			}));
+		}
+
+		function buildHeroLayout(photos, width, height, gap, options) {
+			if (photos.length <= 1) {
+				return [{
+					photo: photos[0],
+					x: 0,
+					y: 0,
+					width,
+					height,
+					contain: true
+				}];
+			}
+
+			const hero = photos[0];
+			const remaining = photos.slice(1);
+			const heroWidth = width * 0.46;
+			const rightWidth = width - heroWidth - gap;
+			const secondaryLayout = buildRecursiveWallpaperLayout(
+				remaining,
+				rightWidth,
+				height,
+				{
+					...options,
+					count: remaining.length
+				}
+			);
+
+			return [
+				{
+					photo: hero,
+					x: 0,
+					y: 0,
+					width: heroWidth,
+					height,
+					contain: true
+				},
+				...secondaryLayout.leaves.map(leaf => ({
+					...leaf,
+					x: leaf.x + heroWidth + gap,
+					y: leaf.y
+				}))
+			];
+		}
+
+		async function renderAdvancedWallpaper(options) {
+			const resolution = getAdvancedResolution();
+			const canvas = document.createElement("canvas");
+			canvas.width = resolution.width;
+			canvas.height = resolution.height;
+
+			const context = canvas.getContext("2d", { alpha: true });
+			const startedAt = performance.now();
+			const selectedPhotos = selectPhotosForAdvancedGeneration(options);
+			const loadedImageMap = new Map();
+
+			await Promise.all(
+				selectedPhotos.map(async photo => {
+					loadedImageMap.set(photo, await loadCanvasMedia(photo));
+				})
+			);
+
+			drawAdvancedBackground(
+				context,
+				canvas,
+				[...loadedImageMap.values()]
+			);
+
+			const advanced = savedGeneratorSettings.advancedEnabled;
+			const gap = advanced ? savedGeneratorSettings.gap : 8;
+			const padding = gap;
+			const contentWidth = Math.max(1, canvas.width - padding * 2);
+			const contentHeight = Math.max(1, canvas.height - padding * 2);
+			const layoutMode = advanced ? savedGeneratorSettings.layout : "balanced";
+			let leaves;
+
+			if (layoutMode === "grid") {
+				leaves = buildGridLayout(selectedPhotos, contentWidth, contentHeight, gap);
+			} else if (layoutMode === "hero") {
+				leaves = buildHeroLayout(selectedPhotos, contentWidth, contentHeight, gap, options);
+			} else {
+				const originalAttempts = 1000;
+				const requestedAttempts = advanced
+					? savedGeneratorSettings.attempts
+					: originalAttempts;
+
+				const originalRandom = options.random;
+				const layout = buildRecursiveWallpaperLayout(
+					selectedPhotos,
+					contentWidth,
+					contentHeight,
+					{
+						...options,
+						count: selectedPhotos.length,
+						random: originalRandom,
+						attempts: requestedAttempts,
+						chaotic: layoutMode === "chaotic"
+					}
+				);
+
+				leaves = layout.leaves;
+			}
+
+			const borderStyle = advanced ? savedGeneratorSettings.border : "none";
+			const radius = advanced ? savedGeneratorSettings.radius : 0;
+			const shadowEnabled = advanced && savedGeneratorSettings.shadow;
+			const videoRegions = [];
+
+			for (const leaf of leaves) {
+				const image = loadedImageMap.get(leaf.photo);
+				let x = leaf.x + padding;
+				let y = leaf.y + padding;
+				let width = leaf.width;
+				let height = leaf.height;
+				let borderSize = 0;
+				let bottomBorder = 0;
+				let borderColor = "#ffffff";
+
+				if (borderStyle === "white" || borderStyle === "black") {
+					borderSize = Math.max(3, Math.round(Math.min(width, height) * 0.012));
+					borderColor = borderStyle === "black" ? "#000000" : "#ffffff";
+				} else if (borderStyle === "polaroid") {
+					borderSize = Math.max(5, Math.round(Math.min(width, height) * 0.018));
+					bottomBorder = borderSize * 3;
+					borderColor = "#ffffff";
+				}
+
+				if (shadowEnabled) {
+					context.save();
+					context.shadowColor = "rgba(0, 0, 0, 0.35)";
+					context.shadowBlur = Math.max(8, Math.min(width, height) * 0.035);
+					context.shadowOffsetY = Math.max(4, Math.min(width, height) * 0.018);
+					context.fillStyle = borderColor;
+					roundedRectanglePath(context, x, y, width, height, radius);
+					context.fill();
+					context.restore();
+				}
+
+				if (borderSize > 0 || bottomBorder > 0) {
+					context.save();
+					context.fillStyle = borderColor;
+					roundedRectanglePath(context, x, y, width, height, radius);
+					context.fill();
+					context.restore();
+
+					x += borderSize;
+					y += borderSize;
+					width -= borderSize * 2;
+					height -= borderSize * 2 + bottomBorder;
+				}
+
+				context.save();
+				roundedRectanglePath(context, x, y, width, height, radius);
+				context.clip();
+
+				if (leaf.contain) {
+					drawImageContain(context, image, x, y, width, height);
+				} else {
+					context.drawImage(image, x, y, width, height);
+				}
+
+				context.restore();
+
+				if (leaf.photo.type === "video") {
+					videoRegions.push({
+						photo: leaf.photo,
+						x,
+						y,
+						width,
+						height,
+						radius,
+						contain: Boolean(leaf.contain)
+					});
+				}
+
+				recentlyUsedPhotos.add(leaf.photo);
+			}
+
+			const generationTime = performance.now() - startedAt;
+
+			const blob = await new Promise((resolve, reject) => {
+				canvas.toBlob(
+					result => result ? resolve(result) : reject(new Error("Could not create the wallpaper.")),
+					"image/png"
+				);
+			});
+
+			return {
+				blob,
+				seed: options.seed,
+				count: selectedPhotos.length,
+				width: canvas.width,
+				height: canvas.height,
+				layout: layoutMode,
+				generationTime,
+				hasVideos: videoRegions.length > 0,
+				videoRegions
+			};
+		}
+
+
+		function getSupportedVideoMimeType() {
+			const candidates = [
+				"video/webm;codecs=vp9",
+				"video/webm;codecs=vp8",
+				"video/webm"
+			];
+
+			return candidates.find(type => MediaRecorder.isTypeSupported(type)) || "";
+		}
+
+		function roundedClip(context, region) {
+			roundedRectanglePath(
+				context,
+				region.x,
+				region.y,
+				region.width,
+				region.height,
+				region.radius
+			);
+			context.clip();
+		}
+
+		async function createAnimatedWallpaper(choice) {
+			if (!choice || !choice.hasVideos || choice.videoRegions.length === 0) {
+				throw new Error("This wallpaper does not contain any videos.");
+			}
+
+			if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
+				throw new Error("This browser does not support WebM canvas recording.");
+			}
+
+			const mimeType = getSupportedVideoMimeType();
+
+			if (!mimeType) {
+				throw new Error("This browser cannot export a supported WebM format.");
+			}
+
+			const canvas = document.createElement("canvas");
+			canvas.width = choice.width;
+			canvas.height = choice.height;
+			const context = canvas.getContext("2d", { alpha: true });
+			const baseImage = await loadCanvasImage(choice.url);
+			const loadedVideos = new Map();
+
+			await Promise.all(
+				[...new Set(choice.videoRegions.map(region => region.photo))].map(async photo => {
+					const video = await loadCanvasVideo(photo.src);
+					video.currentTime = 0;
+					loadedVideos.set(photo, video);
+				})
+			);
+
+			const stream = canvas.captureStream(30);
+			const recorder = new MediaRecorder(stream, {
+				mimeType,
+				videoBitsPerSecond: 12000000
+			});
+
+			const chunks = [];
+			recorder.addEventListener("dataavailable", event => {
+				if (event.data && event.data.size > 0) {
+					chunks.push(event.data);
+				}
+			});
+
+			const stopped = new Promise((resolve, reject) => {
+				recorder.addEventListener("stop", resolve, { once: true });
+				recorder.addEventListener("error", () => {
+					reject(new Error("The browser failed while recording the video wallpaper."));
+				}, { once: true });
+			});
+
+			for (const video of loadedVideos.values()) {
+				video.loop = true;
+				video.muted = true;
+				await video.play().catch(() => {});
+			}
+
+			recorder.start(250);
+			const durationMilliseconds = 6000;
+			const startedAt = performance.now();
+
+			await new Promise(resolve => {
+				function drawFrame(now) {
+					context.clearRect(0, 0, canvas.width, canvas.height);
+					context.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
+
+					for (const region of choice.videoRegions) {
+						const video = loadedVideos.get(region.photo);
+
+						if (!video || video.readyState < 2) {
+							continue;
+						}
+
+						context.save();
+						roundedClip(context, region);
+
+						if (region.contain) {
+							drawImageContain(
+								context,
+								video,
+								region.x,
+								region.y,
+								region.width,
+								region.height
+							);
+						} else {
+							context.drawImage(
+								video,
+								region.x,
+								region.y,
+								region.width,
+								region.height
+							);
+						}
+
+						context.restore();
+					}
+
+					if (now - startedAt >= durationMilliseconds) {
+						resolve();
+						return;
+					}
+
+					requestAnimationFrame(drawFrame);
+				}
+
+				requestAnimationFrame(drawFrame);
+			});
+
+			recorder.stop();
+			await stopped;
+
+			for (const video of loadedVideos.values()) {
+				video.pause();
+				video.removeAttribute("src");
+				video.load();
+			}
+
+			for (const track of stream.getTracks()) {
+				track.stop();
+			}
+
+			return new Blob(chunks, { type: mimeType });
+		}
+
+		function stopAnimatedWallpaperPreview() {
+			wallpaperPreviewVideo.pause();
+			wallpaperPreviewVideo.style.display = "none";
+			wallpaperPreviewVideo.removeAttribute("src");
+			wallpaperPreviewVideo.load();
+		}
+
+		async function ensureAnimatedWallpaper(choice) {
+			if (choice.animatedBlob) {
+				return choice.animatedBlob;
+			}
+
+			choice.animatedBlob = await createAnimatedWallpaper(choice);
+			choice.animatedUrl = URL.createObjectURL(choice.animatedBlob);
+			return choice.animatedBlob;
+		}
+
+		async function previewAnimatedWallpaper() {
+			const choice = generatedChoices[selectedChoiceIndex];
+
+			if (!choice || !choice.hasVideos) {
+				return;
+			}
+
+			previewVideoWallpaperButton.disabled = true;
+			previewVideoWallpaperButton.textContent = "Rendering Video…";
+
+			try {
+				await ensureAnimatedWallpaper(choice);
+				const choiceGrid = document.getElementById("wallpaperChoiceGrid");
+
+				if (choiceGrid) {
+					choiceGrid.style.display = "none";
+				}
+
+				wallpaperPreviewImage.style.display = "none";
+				wallpaperPreviewVideo.src = choice.animatedUrl;
+				wallpaperPreviewVideo.style.display = "block";
+				await wallpaperPreviewVideo.play().catch(() => {});
+			} catch (error) {
+				console.error(error);
+				showGalleryToast(error.message || "The video preview could not be created.");
+			} finally {
+				previewVideoWallpaperButton.disabled = false;
+				previewVideoWallpaperButton.textContent = "Preview Video";
+			}
+		}
+
+		async function exportAnimatedWallpaper() {
+			const choice = generatedChoices[selectedChoiceIndex];
+
+			if (!choice || !choice.hasVideos) {
+				return;
+			}
+
+			exportVideoWallpaperButton.disabled = true;
+			exportVideoWallpaperButton.textContent = "Rendering WebM…";
+
+			try {
+				await ensureAnimatedWallpaper(choice);
+				const link = document.createElement("a");
+				link.href = choice.animatedUrl;
+				link.download = `trollmine-video-wallpaper-${Date.now()}.webm`;
+				document.body.appendChild(link);
+				link.click();
+				link.remove();
+				showGalleryToast("Animated WebM wallpaper downloaded.");
+			} catch (error) {
+				console.error(error);
+				showGalleryToast(error.message || "The video wallpaper could not be exported.");
+			} finally {
+				exportVideoWallpaperButton.disabled = false;
+				exportVideoWallpaperButton.textContent = "Export WebM";
+			}
+		}
+
+		previewVideoWallpaperButton.addEventListener("click", previewAnimatedWallpaper);
+		exportVideoWallpaperButton.addEventListener("click", exportAnimatedWallpaper);
+
+		function clearGeneratedChoices() {
+			for (const choice of generatedChoices) {
+				if (choice.url) {
+					URL.revokeObjectURL(choice.url);
+				}
+
+				if (choice.animatedUrl) {
+					URL.revokeObjectURL(choice.animatedUrl);
+				}
+			}
+
+			generatedChoices = [];
+		}
+
+		function selectGeneratedChoice(index) {
+			selectedChoiceIndex = index;
+			const choice = generatedChoices[index];
+			stopAnimatedWallpaperPreview();
+
+			const choiceGrid = document.getElementById("wallpaperChoiceGrid");
+
+			if (choiceGrid) {
+				choiceGrid.style.display = "grid";
+			}
+
+			wallpaperPreviewImage.style.display =
+				generatedChoices.length === 1 ? "block" : "none";
+
+			previewVideoWallpaperButton.hidden = !choice.hasVideos;
+			exportVideoWallpaperButton.hidden = !choice.hasVideos;
+
+			generatedWallpaperBlob = choice.blob;
+			generatedWallpaperUrl = choice.url;
+
+			document.querySelectorAll(".wallpaper-choice").forEach((element, choiceIndex) => {
+				element.classList.toggle("selected", choiceIndex === index);
+			});
+
+			const statsElement = document.getElementById("advancedWallpaperStats");
+
+			if (statsElement) {
+				statsElement.textContent =
+					`${choice.width} × ${choice.height} • ${choice.count} media • ${choice.layout} • ${Math.round(choice.generationTime)} ms • Seed ${choice.seed}`;
+			}
+
+			previewSeed.textContent = `Seed: ${choice.seed} • ${choice.count} media`;
+		}
+
+		function showAdvancedWallpaperPreview(choices) {
+			clearGeneratedChoices();
+
+			generatedChoices = choices.map(choice => ({
+				...choice,
+				url: URL.createObjectURL(choice.blob)
+			}));
+
+			const previewCard = document.querySelector(".wallpaper-preview-card");
+			const oldImage = document.getElementById("wallpaperPreviewImage");
+			const oldGrid = document.getElementById("wallpaperChoiceGrid");
+
+			if (oldGrid) {
+				oldGrid.remove();
+			}
+
+			if (generatedChoices.length === 1) {
+				oldImage.style.display = "block";
+				oldImage.src = generatedChoices[0].url;
+			} else {
+				oldImage.style.display = "none";
+				const grid = document.createElement("div");
+				grid.id = "wallpaperChoiceGrid";
+				grid.className = "wallpaper-choice-grid";
+
+				generatedChoices.forEach((choice, index) => {
+					const button = document.createElement("button");
+					button.type = "button";
+					button.className = "wallpaper-choice";
+					button.innerHTML = `
+						<img src="${choice.url}" alt="Generated wallpaper choice ${index + 1}">
+						<span class="wallpaper-choice-number">Choice ${index + 1}</span>
+					`;
+					button.addEventListener("click", () => selectGeneratedChoice(index));
+					grid.appendChild(button);
+				});
+
+				previewCard.insertBefore(grid, previewSeed);
+			}
+
+			let statsElement = document.getElementById("advancedWallpaperStats");
+
+			if (!statsElement) {
+				statsElement = document.createElement("div");
+				statsElement.id = "advancedWallpaperStats";
+				statsElement.className = "wallpaper-stats";
+				previewSeed.insertAdjacentElement("afterend", statsElement);
+			}
+
+			statsElement.style.display =
+				savedGeneratorSettings.advancedEnabled &&
+				savedGeneratorSettings.statistics
+					? "block"
+					: "none";
+
+			let extraActions = document.getElementById("wallpaperExtraActions");
+
+			if (!extraActions) {
+				extraActions = document.createElement("div");
+				extraActions.id = "wallpaperExtraActions";
+				extraActions.className = "wallpaper-extra-actions";
+				document.querySelector(".wallpaper-preview-actions").insertAdjacentElement("beforebegin", extraActions);
+			}
+
+			extraActions.replaceChildren();
+
+			if (savedGeneratorSettings.advancedEnabled && savedGeneratorSettings.favorites) {
+				const favoriteButton = document.createElement("button");
+				favoriteButton.type = "button";
+				favoriteButton.className = "wallpaper-action";
+				favoriteButton.textContent = "Favorite";
+				favoriteButton.addEventListener("click", () => {
+					const selected = generatedChoices[selectedChoiceIndex];
+
+					if (!sessionFavorites.includes(selected)) {
+						sessionFavorites.push(selected);
+						showGalleryToast(`Added to favorites (${sessionFavorites.length}).`);
+					}
+				});
+				extraActions.appendChild(favoriteButton);
+			}
+
+			if (savedGeneratorSettings.advancedEnabled && savedGeneratorSettings.history) {
+				const historyButton = document.createElement("button");
+				historyButton.type = "button";
+				historyButton.className = "wallpaper-action";
+				historyButton.textContent = `History (${sessionGenerationHistory.length})`;
+				historyButton.addEventListener("click", openWallpaperHistory);
+				extraActions.appendChild(historyButton);
+			}
+
+			wallpaperPreview.classList.add("visible");
+			wallpaperPreview.setAttribute("aria-hidden", "false");
+			selectGeneratedChoice(0);
+		}
+
+		async function generateAdvancedMosaicBackground() {
+			if (galleryImages.length === 0) {
+				showGalleryToast("Choose a folder with images first.");
+				return;
+			}
+
+			const button = document.getElementById("generateBackgroundButton");
+			const remake = document.getElementById("remakeWallpaperButton");
+
+			button.disabled = true;
+			remake.disabled = true;
+			button.textContent = "Generating…";
+			remake.textContent = "Generating…";
+
+			try {
+				const baseOptions = getGeneratorOptions();
+				const resultCount =
+					savedGeneratorSettings.advancedEnabled
+						? savedGeneratorSettings.bestOf
+						: 1;
+
+				const choices = [];
+
+				for (let index = 0; index < resultCount; index++) {
+					const seed =
+						index === 0
+							? baseOptions.seed
+							: `${baseOptions.seed}-${index + 1}`;
+
+					const options = {
+						...baseOptions,
+						seed,
+						random: createSeededRandom(seed)
+					};
+
+					choices.push(await renderAdvancedWallpaper(options));
+				}
+
+				if (savedGeneratorSettings.advancedEnabled && savedGeneratorSettings.history) {
+					for (const choice of choices) {
+						sessionGenerationHistory.push({
+							...choice,
+							historyUrl: URL.createObjectURL(choice.blob)
+						});
+					}
+				}
+
+				showAdvancedWallpaperPreview(choices);
+			} catch (error) {
+				console.error(error);
+				showGalleryToast(
+					error && error.message
+						? `Could not generate: ${error.message}`
+						: "The mosaic could not be generated."
+				);
+			} finally {
+				button.disabled = false;
+				remake.disabled = false;
+				button.textContent = "Generate Background";
+				remake.textContent = "Remake";
+			}
+		}
+
+		// Replace generator buttons to remove the old listeners.
+		const oldGenerateButton = document.getElementById("generateBackgroundButton");
+		const newGenerateButton = oldGenerateButton.cloneNode(true);
+		oldGenerateButton.replaceWith(newGenerateButton);
+		newGenerateButton.addEventListener("click", () => {
+			savedGeneratorSettings.seed = createRandomSeed();
+			wallpaperSeed.value = savedGeneratorSettings.seed;
+			persistGeneratorSettings();
+			generateAdvancedMosaicBackground();
+		});
+
+		const oldRemakeButton = document.getElementById("remakeWallpaperButton");
+		const newRemakeButton = oldRemakeButton.cloneNode(true);
+		oldRemakeButton.replaceWith(newRemakeButton);
+		newRemakeButton.addEventListener("click", () => {
+			savedGeneratorSettings.seed = createRandomSeed();
+			wallpaperSeed.value = savedGeneratorSettings.seed;
+			generateAdvancedMosaicBackground();
+		});
+
+		downloadWallpaperButton.addEventListener("click", () => {
+			if (generatedChoices[selectedChoiceIndex]) {
+				generatedWallpaperBlob = generatedChoices[selectedChoiceIndex].blob;
+				generatedWallpaperUrl = generatedChoices[selectedChoiceIndex].url;
+			}
+		}, true);
+
+		function refreshPhotoState(photo) {
+			if (!photo.element) {
+				return;
+			}
+
+			photo.element.classList.toggle(
+				"preferred-photo",
+				preferredPhotos.has(photo)
+			);
+
+			photo.element.classList.toggle(
+				"excluded-photo",
+				excludedPhotos.has(photo)
+			);
+		}
+
+		updateAdvancedSettingsState();
+	</script>
+
+
+	<style>
+		.settings-code-box {
+			margin-top: 12px;
+			padding: 12px;
+			border-radius: 12px;
+			background: #f4f3fb;
+		}
+
+		.settings-code-box textarea {
+			width: 100%;
+			min-height: 82px;
+			resize: vertical;
+			padding: 10px;
+			border: 1px solid rgba(0, 0, 0, 0.16);
+			border-radius: 10px;
+			background: #ffffff;
+			color: #222222;
+			font: 700 0.76rem/1.45 monospace;
+		}
+
+		.settings-code-actions,
+		.photo-state-actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			margin-top: 9px;
+		}
+
+		.small-settings-button {
+			padding: 8px 11px;
+			border: 0;
+			border-radius: 9px;
+			background: #765fe7;
+			color: #ffffff;
+			font: inherit;
+			font-size: 0.75rem;
+			font-weight: 850;
+			cursor: pointer;
+		}
+
+		.small-settings-button.secondary {
+			background: #e7e4f8;
+			color: #3e3470;
+		}
+
+		.history-overlay {
+			position: fixed;
+			inset: 0;
+			z-index: 2500;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			padding: 20px;
+			background: rgba(0, 0, 0, 0.7);
+		}
+
+		.history-overlay.visible {
+			display: flex;
+		}
+
+		.history-card {
+			width: min(980px, 96vw);
+			max-height: 88vh;
+			overflow: auto;
+			padding: 18px;
+			border-radius: 18px;
+			background: #ffffff;
+		}
+
+		.history-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			margin-bottom: 14px;
+		}
+
+		.history-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 12px;
+		}
+
+		.history-item {
+			overflow: hidden;
+			border: 1px solid rgba(0, 0, 0, 0.12);
+			border-radius: 12px;
+			background: #f5f5f5;
+		}
+
+		.history-item img {
+			display: block;
+			width: 100%;
+			aspect-ratio: 16 / 9;
+			object-fit: contain;
+			background:
+				linear-gradient(45deg, #dddddd 25%, transparent 25%),
+				linear-gradient(-45deg, #dddddd 25%, transparent 25%),
+				linear-gradient(45deg, transparent 75%, #dddddd 75%),
+				linear-gradient(-45deg, transparent 75%, #dddddd 75%);
+			background-size: 18px 18px;
+			background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+		}
+
+		.history-item-footer {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+			padding: 9px;
+			font-size: 0.72rem;
+			font-weight: 800;
+		}
+
+		.gallery-item .photo-state-actions {
+			position: absolute;
+			right: 8px;
+			bottom: 8px;
+			z-index: 5;
+			display: flex;
+			margin: 0;
+			opacity: 0;
+			transform: translateY(4px);
+			transition: opacity 150ms ease, transform 150ms ease;
+		}
+
+		.gallery-item:hover .photo-state-actions {
+			opacity: 1;
+			transform: translateY(0);
+		}
+
+		.photo-state-button {
+			width: 34px;
+			height: 34px;
+			padding: 0;
+			border: 0;
+			border-radius: 9px;
+			background: rgba(0, 0, 0, 0.72);
+			color: #ffffff;
+			font-size: 1rem;
+			cursor: pointer;
+		}
+
+		@media (max-width: 620px) {
+			.history-grid {
+				grid-template-columns: 1fr;
+			}
+
+			.gallery-item .photo-state-actions {
+				opacity: 1;
+				transform: none;
+			}
+		}
+	</style>
+
+	<div id="wallpaperHistoryOverlay" class="history-overlay" aria-hidden="true">
+		<div class="history-card">
+			<div class="history-header">
+				<div>
+					<h2 style="margin:0;">Generation history</h2>
+					<p id="wallpaperHistoryCount" style="margin:4px 0 0;color:#666666;font-size:.8rem;font-weight:700;"></p>
+				</div>
+				<button id="closeWallpaperHistory" class="small-settings-button secondary" type="button">Close</button>
+			</div>
+			<div id="wallpaperHistoryGrid" class="history-grid"></div>
+		</div>
+	</div>
+
+	<script>
+		const settingsCodeMarkup = `
+			<div class="settings-code-box">
+				<p class="generator-section-title" style="margin-bottom:5px;">Settings code</p>
+				<p class="generator-settings-description">Copy this code to share every generator setting with a friend.</p>
+				<textarea id="settingsCodeText" spellcheck="false" placeholder="Generate or paste a settings code here"></textarea>
+				<div class="settings-code-actions">
+					<button id="generateSettingsCodeButton" class="small-settings-button" type="button">Generate code</button>
+					<button id="copySettingsCodeButton" class="small-settings-button secondary" type="button">Copy</button>
+					<button id="applySettingsCodeButton" class="small-settings-button secondary" type="button">Apply code</button>
+				</div>
+			</div>
+		`;
+
+		advancedElements.body.insertAdjacentHTML(
+			"beforeend",
+			settingsCodeMarkup
+		);
+
+		const settingsCodeText = document.getElementById("settingsCodeText");
+		const wallpaperHistoryOverlay = document.getElementById("wallpaperHistoryOverlay");
+		const wallpaperHistoryGrid = document.getElementById("wallpaperHistoryGrid");
+		const wallpaperHistoryCount = document.getElementById("wallpaperHistoryCount");
+
+		function encodeSettingsCode(settings) {
+			const json = JSON.stringify(settings);
+			const bytes = new TextEncoder().encode(json);
+			let binary = "";
+
+			for (const byte of bytes) {
+				binary += String.fromCharCode(byte);
+			}
+
+			return `TMG2-${btoa(binary)}`;
+		}
+
+		function decodeSettingsCode(code) {
+			const cleanCode = code.trim();
+
+			if (!cleanCode.startsWith("TMG2-")) {
+				throw new Error("This is not a valid TMG2 settings code.");
+			}
+
+			const binary = atob(cleanCode.slice(5));
+			const bytes = Uint8Array.from(
+				binary,
+				character => character.charCodeAt(0)
+			);
+
+			return JSON.parse(new TextDecoder().decode(bytes));
+		}
+
+		function applySettingsToControls(settings) {
+			Object.assign(savedGeneratorSettings, advancedDefaults, settings);
+			persistGeneratorSettings();
+			openGeneratorSettings();
+		}
+
+		document.getElementById("generateSettingsCodeButton").addEventListener("click", () => {
+			saveGeneratorSettings();
+			settingsCodeText.value = encodeSettingsCode(savedGeneratorSettings);
+			openGeneratorSettings();
+			settingsCodeText.focus();
+			settingsCodeText.select();
+		});
+
+		document.getElementById("copySettingsCodeButton").addEventListener("click", async () => {
+			if (!settingsCodeText.value.trim()) {
+				settingsCodeText.value = encodeSettingsCode(savedGeneratorSettings);
+			}
+
+			try {
+				await navigator.clipboard.writeText(settingsCodeText.value.trim());
+				showGalleryToast("Settings code copied.");
+			} catch (error) {
+				settingsCodeText.focus();
+				settingsCodeText.select();
+				document.execCommand("copy");
+				showGalleryToast("Settings code copied.");
+			}
+		});
+
+		document.getElementById("applySettingsCodeButton").addEventListener("click", () => {
+			try {
+				const importedSettings = decodeSettingsCode(settingsCodeText.value);
+				applySettingsToControls(importedSettings);
+				showGalleryToast("Settings code applied and saved.");
+			} catch (error) {
+				showGalleryToast(error.message || "The settings code is invalid.");
+			}
+		});
+
+		function openWallpaperHistory() {
+			wallpaperHistoryGrid.replaceChildren();
+			wallpaperHistoryCount.textContent =
+				`${sessionGenerationHistory.length} saved generation${sessionGenerationHistory.length === 1 ? "" : "s"} this session`;
+
+			if (sessionGenerationHistory.length === 0) {
+				const empty = document.createElement("p");
+				empty.textContent = "No generated wallpapers are in the history yet.";
+				empty.style.gridColumn = "1 / -1";
+				empty.style.textAlign = "center";
+				empty.style.padding = "40px";
+				wallpaperHistoryGrid.appendChild(empty);
+			}
+
+			[...sessionGenerationHistory].reverse().forEach((entry, reverseIndex) => {
+				const originalIndex =
+					sessionGenerationHistory.length - 1 - reverseIndex;
+
+				const item = document.createElement("div");
+				item.className = "history-item";
+
+				const image = document.createElement("img");
+				image.src = entry.historyUrl;
+
+				const footer = document.createElement("div");
+				footer.className = "history-item-footer";
+
+				const information = document.createElement("span");
+				information.textContent =
+					`${entry.width}×${entry.height} • ${entry.count} photos`;
+
+				const useButton = document.createElement("button");
+				useButton.type = "button";
+				useButton.className = "small-settings-button";
+				useButton.textContent = "Use";
+				useButton.addEventListener("click", () => {
+					const currentEntry = sessionGenerationHistory[originalIndex];
+
+					showAdvancedWallpaperPreview([{
+						...currentEntry,
+						blob: currentEntry.blob
+					}]);
+
+					closeWallpaperHistory();
+				});
+
+				footer.append(information, useButton);
+				item.append(image, footer);
+				wallpaperHistoryGrid.appendChild(item);
+			});
+
+			wallpaperHistoryOverlay.classList.add("visible");
+			wallpaperHistoryOverlay.setAttribute("aria-hidden", "false");
+		}
+
+		function closeWallpaperHistory() {
+			wallpaperHistoryOverlay.classList.remove("visible");
+			wallpaperHistoryOverlay.setAttribute("aria-hidden", "true");
+		}
+
+		document.getElementById("closeWallpaperHistory").addEventListener(
+			"click",
+			closeWallpaperHistory
+		);
+
+		wallpaperHistoryOverlay.addEventListener("click", event => {
+			if (event.target === wallpaperHistoryOverlay) {
+				closeWallpaperHistory();
+			}
+		});
+
+		function ensurePhotoStateButtons(photo) {
+			if (!photo.element) {
+				return;
+			}
+
+			const existingActions = photo.element.querySelector(".photo-state-actions");
+
+			if (existingActions) {
+				existingActions.remove();
+			}
+		}
+
+		function refreshAllPhotoStateButtons() {
+			for (const photo of galleryImages) {
+				ensurePhotoStateButtons(photo);
+			}
+		}
+
+
+		const photoButtonObserver = new MutationObserver(() => {
+			refreshAllPhotoStateButtons();
+		});
+
+		photoButtonObserver.observe(galleryGrid, {
+			childList: true,
+			subtree: false
+		});
+
+
+		// Gallery organization, drag and drop, statistics and similarity tools
+
+		const tagsButton = document.getElementById("tagsButton");
+		const similarButton = document.getElementById("similarButton");
+		const statisticsButton = document.getElementById("statisticsButton");
+		const dropOverlay = document.getElementById("dropOverlay");
+		const tagsOverlay = document.getElementById("tagsOverlay");
+		const statisticsOverlay = document.getElementById("statisticsOverlay");
+		const similarOverlay = document.getElementById("similarOverlay");
+		const tagsSelectedName = document.getElementById("tagsSelectedName");
+		const selectedTagList = document.getElementById("selectedTagList");
+		const tagFilterList = document.getElementById("tagFilterList");
+		const tagInput = document.getElementById("tagInput");
+		const addTagButton = document.getElementById("addTagButton");
+		const clearTagFilterButton = document.getElementById("clearTagFilterButton");
+		const statisticsGrid = document.getElementById("statisticsGrid");
+		const similarGrid = document.getElementById("similarGrid");
+		const similarDescription = document.getElementById("similarDescription");
+
+		const MEDIA_TAGS_KEY = "trollmineMediaTags";
+		let selectedGalleryMedia = null;
+		let activeTagFilter = "";
+		let dragDepth = 0;
+		let spacePanHeld = false;
+		let inertiaFrame = 0;
+		let panVelocityX = 0;
+		let panVelocityY = 0;
+		let lastPanTime = 0;
+		let originalCreateGalleryElement = createGalleryElement;
+
+		function readStoredTags() {
+			try {
+				const stored = JSON.parse(localStorage.getItem(MEDIA_TAGS_KEY) || "{}");
+				return stored && typeof stored === "object" ? stored : {};
+			} catch {
+				return {};
+			}
+		}
+
+		const mediaTags = readStoredTags();
+
+		function saveMediaTags() {
+			localStorage.setItem(MEDIA_TAGS_KEY, JSON.stringify(mediaTags));
+		}
+
+		function getPhotoTags(photo) {
+			const path = getMediaPath(photo);
+			const tags = mediaTags[path];
+			return Array.isArray(tags) ? tags : [];
+		}
+
+		function setPhotoTags(photo, tags) {
+			const path = getMediaPath(photo);
+			const normalized = [...new Set(tags.map(tag => tag.trim()).filter(Boolean))]
+				.sort((first, second) => first.localeCompare(second));
+
+			if (normalized.length === 0) {
+				delete mediaTags[path];
+			} else {
+				mediaTags[path] = normalized;
+			}
+
+			saveMediaTags();
+		}
+
+		function openFeatureOverlay(overlay) {
+			overlay.classList.add("visible");
+			overlay.setAttribute("aria-hidden", "false");
+		}
+
+		function closeFeatureOverlay(overlay) {
+			overlay.classList.remove("visible");
+			overlay.setAttribute("aria-hidden", "true");
+		}
+
+		for (const closeButton of document.querySelectorAll("[data-close-overlay]")) {
+			closeButton.addEventListener("click", () => {
+				const overlay = document.getElementById(closeButton.dataset.closeOverlay);
+				closeFeatureOverlay(overlay);
+			});
+		}
+
+		for (const overlay of [tagsOverlay, statisticsOverlay, similarOverlay]) {
+			overlay.addEventListener("click", event => {
+				if (event.target === overlay) {
+					closeFeatureOverlay(overlay);
+				}
+			});
+		}
+
+		function selectGalleryMedia(photo) {
+			if (selectedGalleryMedia?.element) {
+				selectedGalleryMedia.element.classList.remove("selected");
+			}
+
+			selectedGalleryMedia = photo;
+
+			if (photo?.element) {
+				photo.element.classList.add("selected");
+			}
+		}
+
+		function focusGalleryMedia(photo, targetScale = Math.max(galleryScale, 1.5)) {
+			if (!photo?.element) {
+				return;
+			}
+
+			const itemLeft = photo.element.offsetLeft;
+			const itemTop = photo.element.offsetTop;
+			const itemWidth = photo.element.offsetWidth;
+			const itemHeight = photo.element.offsetHeight;
+			const viewportWidth = galleryViewport.clientWidth;
+			const viewportHeight = galleryViewport.clientHeight;
+			const fitScale = Math.min(
+				maximumZoom,
+				Math.max(
+					minimumZoom,
+					Math.min(
+						(viewportWidth * 0.78) / Math.max(1, itemWidth),
+						(viewportHeight * 0.78) / Math.max(1, itemHeight)
+					)
+				)
+			);
+
+			galleryScale = Math.min(maximumZoom, Math.max(targetScale, fitScale));
+			galleryX = viewportWidth / 2 - (itemLeft + itemWidth / 2) * galleryScale;
+			galleryY = viewportHeight / 2 - (itemTop + itemHeight / 2) * galleryScale;
+			applyGalleryTransform();
+			selectGalleryMedia(photo);
+		}
+
+		createGalleryElement = function(photo) {
+			const element = originalCreateGalleryElement(photo);
+
+			element.addEventListener("click", event => {
+				if (!event.shiftKey && !event.ctrlKey) {
+					selectGalleryMedia(photo);
+				}
+			});
+
+			element.addEventListener("dblclick", event => {
+				event.preventDefault();
+				event.stopPropagation();
+				focusGalleryMedia(photo, 1.65);
+			});
+
+			return element;
+		};
+
+		function applyTagFilter() {
+			for (const photo of galleryImages) {
+				const visible = !activeTagFilter || getPhotoTags(photo).includes(activeTagFilter);
+				photo.element?.classList.toggle("tag-hidden", !visible);
+			}
+
+			layoutVisibleMosaic();
+		}
+
+		function layoutVisibleMosaic() {
+			const visiblePhotos = galleryImages.filter(photo => !photo.element?.classList.contains("tag-hidden"));
+
+			if (visiblePhotos.length === 0) {
+				galleryGrid.style.height = "0px";
+				return;
+			}
+
+			const availableWidth = Math.max(320, galleryWorld.clientWidth - 16);
+			const targetRowHeight = Math.max(150, Math.min(290, availableWidth / 5.2));
+			let currentRow = [];
+			let currentRatioTotal = 0;
+			let top = 0;
+
+			function placeVisibleRow(row, ratioTotal, isLastRow) {
+				if (row.length === 0) {
+					return;
+				}
+
+				const totalGaps = mosaicGap * (row.length - 1);
+				const usableWidth = availableWidth - totalGaps;
+				let rowHeight = usableWidth / ratioTotal;
+
+				if (isLastRow) {
+					rowHeight = Math.min(rowHeight, targetRowHeight);
+				}
+
+				let left = 0;
+
+				for (const photo of row) {
+					const width = rowHeight * photo.ratio;
+					photo.element.style.left = `${left}px`;
+					photo.element.style.top = `${top}px`;
+					photo.element.style.width = `${width}px`;
+					photo.element.style.height = `${rowHeight}px`;
+					left += width + mosaicGap;
+				}
+
+				top += rowHeight + mosaicGap;
+			}
+
+			for (const photo of visiblePhotos) {
+				currentRow.push(photo);
+				currentRatioTotal += photo.ratio;
+
+				if (currentRatioTotal * targetRowHeight + mosaicGap * (currentRow.length - 1) >= availableWidth) {
+					placeVisibleRow(currentRow, currentRatioTotal, false);
+					currentRow = [];
+					currentRatioTotal = 0;
+				}
+			}
+
+			placeVisibleRow(currentRow, currentRatioTotal, true);
+			galleryGrid.style.height = `${Math.max(0, top - mosaicGap)}px`;
+		}
+
+		function getAllTags() {
+			return [...new Set(galleryImages.flatMap(getPhotoTags))]
+				.sort((first, second) => first.localeCompare(second));
+		}
+
+		function renderTagsPanel() {
+			selectedTagList.replaceChildren();
+			tagFilterList.replaceChildren();
+
+			if (selectedGalleryMedia) {
+				tagsSelectedName.textContent = getMediaPath(selectedGalleryMedia);
+				tagInput.disabled = false;
+				addTagButton.disabled = false;
+
+				const tags = getPhotoTags(selectedGalleryMedia);
+
+				if (tags.length === 0) {
+					const empty = document.createElement("span");
+					empty.textContent = "No tags yet.";
+					empty.style.opacity = "0.6";
+					selectedTagList.appendChild(empty);
+				}
+
+				for (const tag of tags) {
+					const chip = document.createElement("button");
+					chip.type = "button";
+					chip.className = "tag-chip";
+					chip.innerHTML = `<span>${escapeFeatureText(tag)}</span><span class="tag-chip-remove">×</span>`;
+					chip.title = "Remove tag";
+					chip.addEventListener("click", () => {
+						setPhotoTags(selectedGalleryMedia, tags.filter(existing => existing !== tag));
+
+						if (activeTagFilter === tag && !getAllTags().includes(tag)) {
+							activeTagFilter = "";
+						}
+
+						renderTagsPanel();
+						applyTagFilter();
+					});
+					selectedTagList.appendChild(chip);
+				}
+			} else {
+				tagsSelectedName.textContent = "Select a media item first.";
+				tagInput.disabled = true;
+				addTagButton.disabled = true;
+			}
+
+			const allTags = getAllTags();
+
+			if (allTags.length === 0) {
+				const empty = document.createElement("span");
+				empty.textContent = "No gallery tags yet.";
+				empty.style.opacity = "0.6";
+				tagFilterList.appendChild(empty);
+			}
+
+			for (const tag of allTags) {
+				const count = galleryImages.filter(photo => getPhotoTags(photo).includes(tag)).length;
+				const chip = document.createElement("button");
+				chip.type = "button";
+				chip.className = `tag-chip${activeTagFilter === tag ? " active" : ""}`;
+				chip.textContent = `${tag} · ${count}`;
+				chip.addEventListener("click", () => {
+					activeTagFilter = activeTagFilter === tag ? "" : tag;
+					renderTagsPanel();
+					applyTagFilter();
+				});
+				tagFilterList.appendChild(chip);
+			}
+		}
+
+		function escapeFeatureText(value) {
+			const element = document.createElement("span");
+			element.textContent = value;
+			return element.innerHTML;
+		}
+
+		function addCurrentTag() {
+			if (!selectedGalleryMedia) {
+				showGalleryToast("Select a media item first.");
+				return;
+			}
+
+			const tag = tagInput.value.trim();
+
+			if (!tag) {
+				return;
+			}
+
+			setPhotoTags(selectedGalleryMedia, [...getPhotoTags(selectedGalleryMedia), tag]);
+			tagInput.value = "";
+			renderTagsPanel();
+			applyTagFilter();
+		}
+
+		tagsButton.addEventListener("click", () => {
+			renderTagsPanel();
+			openFeatureOverlay(tagsOverlay);
+		});
+
+		addTagButton.addEventListener("click", addCurrentTag);
+		tagInput.addEventListener("keydown", event => {
+			if (event.key === "Enter") {
+				event.preventDefault();
+				addCurrentTag();
+			}
+		});
+
+		clearTagFilterButton.addEventListener("click", () => {
+			activeTagFilter = "";
+			renderTagsPanel();
+			applyTagFilter();
+		});
+
+		function formatFileSize(bytes) {
+			if (!Number.isFinite(bytes) || bytes <= 0) {
+				return "0 B";
+			}
+
+			const units = ["B", "KB", "MB", "GB", "TB"];
+			const index = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+			return `${(bytes / 1024 ** index).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+		}
+
+		function formatDuration(seconds) {
+			if (!Number.isFinite(seconds) || seconds <= 0) {
+				return "—";
+			}
+
+			const totalSeconds = Math.round(seconds);
+			const hours = Math.floor(totalSeconds / 3600);
+			const minutes = Math.floor((totalSeconds % 3600) / 60);
+			const remainingSeconds = totalSeconds % 60;
+
+			if (hours > 0) {
+				return `${hours}h ${minutes}m ${remainingSeconds}s`;
+			}
+
+			return `${minutes}m ${remainingSeconds}s`;
+		}
+
+		function addStatistic(label, value) {
+			const card = document.createElement("div");
+			card.className = "statistic-card";
+			const labelElement = document.createElement("span");
+			labelElement.className = "statistic-label";
+			labelElement.textContent = label;
+			const valueElement = document.createElement("span");
+			valueElement.className = "statistic-value";
+			valueElement.textContent = value;
+			card.append(labelElement, valueElement);
+			statisticsGrid.appendChild(card);
+		}
+
+		function showStatistics() {
+			statisticsGrid.replaceChildren();
+
+			const images = galleryImages.filter(photo => photo.type !== "video");
+			const videos = galleryImages.filter(photo => photo.type === "video");
+			const folders = new Set();
+
+			for (const photo of galleryImages) {
+				const path = getMediaPath(photo);
+				const parts = path.split("/");
+
+				for (let index = 1; index < parts.length; index++) {
+					folders.add(parts.slice(0, index).join("/"));
+				}
+			}
+
+			const totalSize = galleryImages.reduce((sum, photo) => sum + (photo.file.size || 0), 0);
+			const averageWidth = galleryImages.length
+				? Math.round(galleryImages.reduce((sum, photo) => sum + photo.width, 0) / galleryImages.length)
+				: 0;
+			const averageHeight = galleryImages.length
+				? Math.round(galleryImages.reduce((sum, photo) => sum + photo.height, 0) / galleryImages.length)
+				: 0;
+			const largest = [...galleryImages].sort(
+				(first, second) => second.width * second.height - first.width * first.height
+			)[0];
+			const longest = [...videos].sort((first, second) => second.duration - first.duration)[0];
+			const portraitCount = galleryImages.filter(photo => photo.height > photo.width).length;
+			const landscapeCount = galleryImages.filter(photo => photo.width >= photo.height).length;
+			const averageVideoDuration = videos.length
+				? videos.reduce((sum, video) => sum + video.duration, 0) / videos.length
+				: 0;
+
+			addStatistic("Images", images.length.toLocaleString());
+			addStatistic("Videos", videos.length.toLocaleString());
+			addStatistic("Folders", folders.size.toLocaleString());
+			addStatistic("Total size", formatFileSize(totalSize));
+			addStatistic("Average resolution", galleryImages.length ? `${averageWidth} × ${averageHeight}` : "—");
+			addStatistic("Largest media", largest ? `${largest.width} × ${largest.height} · ${largest.file.name}` : "—");
+			addStatistic("Longest video", longest ? `${formatDuration(longest.duration)} · ${longest.file.name}` : "—");
+			addStatistic("Average video length", videos.length ? formatDuration(averageVideoDuration) : "—");
+			addStatistic("Landscape / portrait", `${landscapeCount} / ${portraitCount}`);
+			addStatistic("Favorites", galleryImages.filter(photo => photo.favorite).length.toLocaleString());
+			addStatistic("Disabled", galleryImages.filter(photo => photo.disabled).length.toLocaleString());
+			addStatistic("Tags", getAllTags().length.toLocaleString());
+
+			openFeatureOverlay(statisticsOverlay);
+		}
+
+		statisticsButton.addEventListener("click", showStatistics);
+
+		async function getMediaFingerprint(photo) {
+			if (photo.fingerprint) {
+				return photo.fingerprint;
+			}
+
+			const canvas = document.createElement("canvas");
+			canvas.width = 9;
+			canvas.height = 8;
+			const context = canvas.getContext("2d", { willReadFrequently: true });
+			let media;
+
+			try {
+				media = photo.type === "video"
+					? await loadCanvasVideo(photo.src)
+					: await loadCanvasImage(photo.src);
+
+				context.drawImage(media, 0, 0, 9, 8);
+				const pixels = context.getImageData(0, 0, 9, 8).data;
+				const grayscale = [];
+				let red = 0;
+				let green = 0;
+				let blue = 0;
+
+				for (let index = 0; index < pixels.length; index += 4) {
+					const r = pixels[index];
+					const g = pixels[index + 1];
+					const b = pixels[index + 2];
+					grayscale.push(Math.round(r * 0.299 + g * 0.587 + b * 0.114));
+					red += r;
+					green += g;
+					blue += b;
+				}
+
+				let hash = "";
+
+				for (let y = 0; y < 8; y++) {
+					for (let x = 0; x < 8; x++) {
+						hash += grayscale[y * 9 + x] > grayscale[y * 9 + x + 1] ? "1" : "0";
+					}
+				}
+
+				const count = pixels.length / 4;
+				photo.fingerprint = {
+					hash,
+					color: [red / count, green / count, blue / count],
+					ratio: photo.ratio
+				};
+
+				return photo.fingerprint;
+			} finally {
+				if (photo.type === "video" && media) {
+					media.pause();
+					media.removeAttribute("src");
+					media.load();
+				}
+			}
+		}
+
+		function hammingDistance(first, second) {
+			let distance = 0;
+
+			for (let index = 0; index < Math.min(first.length, second.length); index++) {
+				if (first[index] !== second[index]) {
+					distance++;
+				}
+			}
+
+			return distance;
+		}
+
+		function fingerprintSimilarity(first, second) {
+			const hashScore = 1 - hammingDistance(first.hash, second.hash) / 64;
+			const colorDistance = Math.sqrt(
+				(first.color[0] - second.color[0]) ** 2 +
+				(first.color[1] - second.color[1]) ** 2 +
+				(first.color[2] - second.color[2]) ** 2
+			) / 441.67;
+			const colorScore = 1 - Math.min(1, colorDistance);
+			const ratioScore = 1 - Math.min(1, Math.abs(Math.log(first.ratio / second.ratio)) / 1.5);
+			return hashScore * 0.62 + colorScore * 0.23 + ratioScore * 0.15;
+		}
+
+		async function showSimilarMedia() {
+			if (!selectedGalleryMedia) {
+				showGalleryToast("Select a media item first.");
+				return;
+			}
+
+			openFeatureOverlay(similarOverlay);
+			similarGrid.replaceChildren();
+			similarDescription.textContent = `Analyzing media similar to ${getMediaPath(selectedGalleryMedia)}…`;
+
+			try {
+				const selectedFingerprint = await getMediaFingerprint(selectedGalleryMedia);
+				const candidates = galleryImages.filter(photo => photo !== selectedGalleryMedia);
+				const results = [];
+
+				for (let index = 0; index < candidates.length; index += 8) {
+					const batch = candidates.slice(index, index + 8);
+					const fingerprints = await Promise.all(batch.map(getMediaFingerprint));
+
+					for (let batchIndex = 0; batchIndex < batch.length; batchIndex++) {
+						results.push({
+							photo: batch[batchIndex],
+							score: fingerprintSimilarity(selectedFingerprint, fingerprints[batchIndex])
+						});
+					}
+
+					await new Promise(resolve => requestAnimationFrame(resolve));
+				}
+
+				results.sort((first, second) => second.score - first.score);
+				const shownResults = results.slice(0, 24);
+				similarDescription.textContent = `Closest visual matches for ${getMediaPath(selectedGalleryMedia)}.`;
+
+				for (const result of shownResults) {
+					const button = document.createElement("button");
+					button.type = "button";
+					button.className = "similar-result";
+					const media = result.photo.type === "video"
+						? document.createElement("video")
+						: document.createElement("img");
+
+					media.src = result.photo.src;
+
+					if (result.photo.type === "video") {
+						media.muted = true;
+						media.playsInline = true;
+						media.preload = "metadata";
+					} else {
+						media.alt = result.photo.file.name;
+					}
+
+					const information = document.createElement("span");
+					information.className = "similar-result-info";
+					const name = document.createElement("span");
+					name.className = "similar-result-name";
+					name.textContent = result.photo.file.name;
+					const score = document.createElement("span");
+					score.className = "similar-result-score";
+					score.textContent = `${Math.round(result.score * 100)}% similar`;
+					information.append(name, score);
+					button.append(media, information);
+
+					button.addEventListener("click", () => {
+						activeTagFilter = "";
+						applyTagFilter();
+						closeFeatureOverlay(similarOverlay);
+						focusGalleryMedia(result.photo, 1.65);
+					});
+
+					similarGrid.appendChild(button);
+				}
+			} catch (error) {
+				console.error(error);
+				similarDescription.textContent = "The similarity scan could not be completed.";
+				showGalleryToast("Could not analyze similar media.");
+			}
+		}
+
+		similarButton.addEventListener("click", showSimilarMedia);
+
+		async function readDroppedEntry(entry, path = "") {
+			if (entry.isFile) {
+				return new Promise(resolve => {
+					entry.file(file => {
+						try {
+							Object.defineProperty(file, "webkitRelativePath", {
+								configurable: true,
+								value: `${path}${file.name}`
+							});
+						} catch {}
+
+						resolve([file]);
+					}, () => resolve([]));
+				});
+			}
+
+			if (!entry.isDirectory) {
+				return [];
+			}
+
+			const reader = entry.createReader();
+			const entries = [];
+
+			while (true) {
+				const batch = await new Promise(resolve => reader.readEntries(resolve, () => resolve([])));
+
+				if (batch.length === 0) {
+					break;
+				}
+
+				entries.push(...batch);
+			}
+
+			const nested = await Promise.all(
+				entries.map(child => readDroppedEntry(child, `${path}${entry.name}/`))
+			);
+
+			return nested.flat();
+		}
+
+		async function getDroppedFiles(dataTransfer) {
+			const items = [...(dataTransfer.items || [])];
+			const entries = items
+				.map(item => item.webkitGetAsEntry?.())
+				.filter(Boolean);
+
+			if (entries.length > 0) {
+				const groups = await Promise.all(entries.map(entry => readDroppedEntry(entry)));
+				return groups.flat();
+			}
+
+			return [...dataTransfer.files];
+		}
+
+		async function loadMediaFiles(files, append = false) {
+			const mediaFiles = files
+				.filter(isMediaFile)
+				.sort((first, second) => getDroppedFilePath(first).localeCompare(
+					getDroppedFilePath(second),
+					undefined,
+					{ numeric: true, sensitivity: "base" }
+				));
+
+			if (mediaFiles.length === 0) {
+				showGalleryToast("No supported images or videos were dropped.");
+				return;
+			}
+
+			if (!append) {
+				for (const media of galleryImages) {
+					if (media.objectUrl) {
+						URL.revokeObjectURL(media.objectUrl);
+					}
+				}
+
+				galleryGrid.replaceChildren();
+				galleryImages = [];
+				selectedGalleryMedia = null;
+				activeTagFilter = "";
+			}
+
+			galleryEmpty.style.display = "block";
+			galleryEmpty.querySelector("h2").textContent = "Loading gallery…";
+			galleryEmpty.querySelector("p").textContent =
+				`Reading ${mediaFiles.length} dropped media item${mediaFiles.length === 1 ? "" : "s"}.`;
+
+			const loaded = await Promise.allSettled(mediaFiles.map(loadGalleryImage));
+			const newMedia = loaded
+				.filter(result => result.status === "fulfilled")
+				.map(result => result.value);
+			const existingPaths = new Set(galleryImages.map(getMediaPath));
+
+			for (const photo of newMedia) {
+				if (!existingPaths.has(getMediaPath(photo))) {
+					galleryImages.push(photo);
+					galleryGrid.appendChild(createGalleryElement(photo));
+					existingPaths.add(getMediaPath(photo));
+				} else if (photo.objectUrl) {
+					URL.revokeObjectURL(photo.objectUrl);
+				}
+			}
+
+			galleryEmpty.style.display = galleryImages.length ? "none" : "block";
+
+			requestAnimationFrame(() => {
+				layoutVisibleMosaic();
+				resetGalleryView();
+			});
+
+			showGalleryToast(`${newMedia.length} media item${newMedia.length === 1 ? "" : "s"} loaded.`);
+		}
+
+		function getDroppedFilePath(file) {
+			return file.webkitRelativePath || file.name;
+		}
+
+		window.addEventListener("dragenter", event => {
+			if (![...(event.dataTransfer?.types || [])].includes("Files")) {
+				return;
+			}
+
+			event.preventDefault();
+			dragDepth++;
+			dropOverlay.classList.add("visible");
+			dropOverlay.setAttribute("aria-hidden", "false");
+		});
+
+		window.addEventListener("dragover", event => {
+			if ([...(event.dataTransfer?.types || [])].includes("Files")) {
+				event.preventDefault();
+				event.dataTransfer.dropEffect = "copy";
+			}
+		});
+
+		window.addEventListener("dragleave", event => {
+			event.preventDefault();
+			dragDepth = Math.max(0, dragDepth - 1);
+
+			if (dragDepth === 0) {
+				dropOverlay.classList.remove("visible");
+				dropOverlay.setAttribute("aria-hidden", "true");
+			}
+		});
+
+		window.addEventListener("drop", async event => {
+			event.preventDefault();
+			dragDepth = 0;
+			dropOverlay.classList.remove("visible");
+			dropOverlay.setAttribute("aria-hidden", "true");
+
+			const files = await getDroppedFiles(event.dataTransfer);
+			await loadMediaFiles(files, false);
+		});
+
+		galleryViewport.addEventListener("pointermove", event => {
+			if (!draggingGallery) {
+				return;
+			}
+
+			const now = performance.now();
+			const elapsed = Math.max(1, now - lastPanTime);
+			panVelocityX = (event.clientX - previousPointerX) / elapsed * 16;
+			panVelocityY = (event.clientY - previousPointerY) / elapsed * 16;
+			lastPanTime = now;
+		}, true);
+
+		galleryViewport.addEventListener("pointerdown", event => {
+			if (event.target.closest(".gallery-item") && !spacePanHeld) {
+				return;
+			}
+
+			cancelAnimationFrame(inertiaFrame);
+			panVelocityX = 0;
+			panVelocityY = 0;
+			lastPanTime = performance.now();
+		}, true);
+
+		galleryViewport.addEventListener("pointerup", event => {
+			if (event.target.closest(".gallery-item") && !spacePanHeld) {
+				return;
+			}
+
+			function animateInertia() {
+				panVelocityX *= 0.91;
+				panVelocityY *= 0.91;
+
+				if (Math.abs(panVelocityX) < 0.12 && Math.abs(panVelocityY) < 0.12) {
+					return;
+				}
+
+				galleryX += panVelocityX;
+				galleryY += panVelocityY;
+				applyGalleryTransform();
+				inertiaFrame = requestAnimationFrame(animateInertia);
+			}
+
+			inertiaFrame = requestAnimationFrame(animateInertia);
+		});
+
+		document.addEventListener("keydown", event => {
+			const inputFocused = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || "");
+
+			if (!galleryPage.classList.contains("active") || inputFocused) {
+				return;
+			}
+
+			if (event.code === "Space") {
+				event.preventDefault();
+				spacePanHeld = true;
+				galleryViewport.classList.add("space-pan");
+			}
+
+			if (event.key.toLowerCase() === "f" && selectedGalleryMedia) {
+				event.preventDefault();
+				focusGalleryMedia(selectedGalleryMedia, Math.max(1.4, galleryScale));
+			}
+
+			if (event.key.toLowerCase() === "t") {
+				event.preventDefault();
+				renderTagsPanel();
+				openFeatureOverlay(tagsOverlay);
+			}
+
+			if (event.key.toLowerCase() === "s" && selectedGalleryMedia) {
+				event.preventDefault();
+				showSimilarMedia();
+			}
+		});
+
+		document.addEventListener("keyup", event => {
+			if (event.code === "Space") {
+				spacePanHeld = false;
+				galleryViewport.classList.remove("space-pan");
+			}
+		});
+
+		document.addEventListener("keydown", event => {
+			if (event.key === "Escape") {
+				for (const overlay of [tagsOverlay, statisticsOverlay, similarOverlay]) {
+					closeFeatureOverlay(overlay);
+				}
+			}
+		});
+
+
+		refreshAllPhotoStateButtons();
+		persistGeneratorSettings();
+	</script>
+
+
+</body>
+</html>
